@@ -136,6 +136,8 @@ section { padding-block: 64px 0; }
 .result { margin-top: auto; display: flex; flex-wrap: wrap; gap: 6px; padding-top: 6px; }
 .result span { font-family: var(--mono); font-size: .76rem; background: var(--bg); border: 1px solid var(--line); padding: 3px 7px; }
 .result span b { color: var(--good); font-weight: 500; }
+.card.full { grid-column: 1 / -1; }
+.card.full p { max-width: 80ch; }
 .card.personal { border-color: var(--kanban); }
 .card.personal .card-top { background: var(--kanban); color: var(--kanban-ink); border-bottom-color: var(--kanban); }
 .card.personal .card-top .hole { border-color: var(--kanban-ink); }
@@ -320,11 +322,11 @@ footer { padding-block: 22px; font-size: .82rem; color: var(--muted); }
         <div class="station now">
           <div class="proc"><div class="yrs">Jun 2025 – now</div><h3>Plant to lab</h3><div class="co">Biopharma CDMO · Sr. Mgr, OpEx</div></div>
           <div class="data">
-            <div><span>Year one</span><b>$1.1M</b></div>
+            <div><span>Year one</span><b>$1.5M</b></div>
             <div><span>Kanban SKUs</span><b>600</b></div>
             <div><span>Lab capacity</span><b>+25%</b></div>
             <div><span>Operator travel</span><b>−85%</b></div>
-            <div><span>Partner</span><b>CSO level</b></div>
+            <div><span>Program metrics</span><b>PD + AFS</b></div>
           </div>
         </div>
       </div>
@@ -369,6 +371,14 @@ footer { padding-block: 22px; font-size: .82rem; color: var(--muted); }
     </article>
 
     <div class="cards">
+      <article class="card full">
+        <div class="card-top"><span>BIOPHARMA · 2025–26</span><span class="hole"></span></div>
+        <div class="card-body">
+          <h3>One set of program metrics for Process Development and Analytical labs</h3>
+          <p>The two groups had no shared way to measure their work. I defined and baselined the operational metrics for both: turnaround, cycle time by unit operation, right first time, review time, aging and backlog. I then connected lab notebook, LIMS, document and ERP data into Power BI so the numbers report live instead of being rebuilt by hand each month.</p>
+          <div class="result"><span>Organizations <b>2</b></span><span>Turnaround · cycle time · RFT</span><span>Manual reports <b>→ live</b></span></div>
+        </div>
+      </article>
       <article class="card">
         <div class="card-top"><span>BIOPHARMA · 2026</span><span class="hole"></span></div>
         <div class="card-body">
