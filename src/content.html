@@ -75,7 +75,7 @@ section { padding-block: 64px 0; }
 
 /* Value stream */
 .vsm-scroll { overflow-x: auto; padding-bottom: 8px; }
-.vsm { display: grid; grid-template-columns: repeat(5, minmax(190px, 1fr)); gap: 0; min-width: 980px; }
+.vsm { display: grid; grid-template-columns: repeat(6, minmax(178px, 1fr)); gap: 0; min-width: 1068px; }
 .station { display: flex; flex-direction: column; position: relative; padding-right: 26px; }
 .station:not(:last-child)::after {
   content: ""; position: absolute; right: 4px; top: 38px; width: 18px; height: 10px;
@@ -93,7 +93,7 @@ section { padding-block: 64px 0; }
 .data span { color: var(--muted); }
 .station.now .proc { background: var(--kanban); color: var(--kanban-ink); border-color: var(--ink); }
 .station.now .proc .yrs, .station.now .proc .co { color: var(--kanban-ink); }
-.timeline-ladder { margin-top: 14px; min-width: 980px; font-family: var(--mono); font-size: .74rem; color: var(--muted); display: grid; grid-template-columns: repeat(5, minmax(190px, 1fr)); }
+.timeline-ladder { margin-top: 14px; min-width: 1068px; font-family: var(--mono); font-size: .74rem; color: var(--muted); display: grid; grid-template-columns: repeat(6, minmax(178px, 1fr)); }
 .timeline-ladder span { border-top: 2px solid var(--muted); padding-top: 4px; margin-right: 26px; }
 .scroll-hint { display: none; font-size: .82rem; color: var(--muted); margin-top: 8px; }
 
@@ -135,6 +135,24 @@ section { padding-block: 64px 0; }
 .card.personal .card-top { background: var(--kanban); color: var(--kanban-ink); border-bottom-color: var(--kanban); }
 .card.personal .card-top .hole { border-color: var(--kanban-ink); }
 
+/* Builds */
+.builds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.build { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--steel); padding: 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.build.wide { grid-column: 1 / -1; }
+.build.personal { border-left-color: var(--kanban); }
+.build-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tag { font-family: var(--mono); font-size: .74rem; background: var(--ink); color: var(--bg); padding: 2px 8px; }
+.build.personal .tag { background: var(--kanban); color: var(--kanban-ink); }
+.build h3 { font-size: 1.2rem; font-weight: 700; font-stretch: 90%; }
+.build p { font-size: .94rem; color: var(--muted); max-width: 70ch; }
+.pipe { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 22px; margin-block: 6px; }
+.pipe div { border: 2px solid var(--ink); padding: 8px 10px; display: flex; flex-direction: column; position: relative; min-width: 0; }
+.pipe div:not(:last-child)::after { content: "→"; position: absolute; right: -19px; top: 50%; transform: translateY(-50%); font-family: var(--mono); color: var(--muted); }
+.pipe b { font-size: .9rem; font-weight: 600; }
+.pipe span { font-size: .76rem; color: var(--muted); }
+.pipe .end { background: var(--kanban); color: var(--kanban-ink); }
+.pipe .end span { color: var(--kanban-ink); }
+
 /* Stack */
 .stack { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 2px solid var(--ink); }
 .layer { padding: 20px 20px 20px 0; display: flex; flex-direction: column; gap: 10px; }
@@ -169,7 +187,9 @@ footer { padding-block: 22px; font-size: .82rem; color: var(--muted); }
   .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .strip div:nth-child(3) { border-left: 0; padding-left: 0; }
   .strip div:nth-child(n+3) { border-top: 1px solid var(--line); }
-  .cards { grid-template-columns: minmax(0, 1fr); }
+  .cards, .builds { grid-template-columns: minmax(0, 1fr); }
+  .pipe { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .pipe div:not(:last-child)::after { content: "↓"; right: auto; left: 50%; top: auto; bottom: -19px; transform: translateX(-50%); }
   .stack { grid-template-columns: minmax(0, 1fr); }
   .layer + .layer { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); }
   .case { padding: 18px; }
@@ -189,7 +209,8 @@ footer { padding-block: 22px; font-size: .82rem; color: var(--muted); }
     <a class="mark" href="#top">VIJAY RAM</a>
     <ul>
       <li><a href="#career">Career</a></li>
-      <li><a href="#work">Projects</a></li>
+      <li><a href="#work">Results</a></li>
+      <li><a href="#build">Builds</a></li>
       <li><a href="#ai">Data + AI</a></li>
       <li><a href="#education">Education</a></li>
       <li><a href="#contact">Contact</a></li>
@@ -220,8 +241,8 @@ footer { padding-block: 22px; font-size: .82rem; color: var(--muted); }
   </div>
   <div class="strip">
     <div><strong class="num">20 yrs</strong><span>Lean and operations, 2006 to now</span></div>
-    <div><strong class="num">5</strong><span>industries: auto, electronics, med device, industrial, biopharma</span></div>
-    <div><strong class="num">$337K</strong><span>annual benefit, latest program, validated with finance</span></div>
+    <div><strong class="num">$7M+</strong><span>finance-validated results across 5 industries</span></div>
+    <div><strong class="num">8</strong><span>data, ML and AI tools I built myself</span></div>
     <div><strong class="num">60→90%</strong><span>on-time delivery on a $50M value stream</span></div>
   </div>
 </header>
@@ -255,36 +276,46 @@ footer { padding-block: 22px; font-size: .82rem; color: var(--muted); }
           </div>
         </div>
         <div class="station">
-          <div class="proc"><div class="yrs">2012 – 2021</div><h3>The system</h3><div class="co">Medtronic · Divisional, then Sr. OpEx Leader</div></div>
+          <div class="proc"><div class="yrs">Jun 2012 – Aug 2021</div><h3>The system</h3><div class="co">Medtronic · Divisional, then site OpEx Leader</div></div>
           <div class="data">
             <div><span>FY21 cost-down</span><b>$7M</b></div>
-            <div><span>COGS program</span><b>$100M</b></div>
+            <div><span>Capacity, no capex</span><b>+15%</b></div>
             <div><span>Cell DPMO</span><b>−50%</b></div>
-            <div><span>Scrap</span><b>−25%</b></div>
+            <div><span>Freight</span><b>−20%</b></div>
             <div><span>Kaizen + A3</span><b>50+</b></div>
           </div>
         </div>
         <div class="station">
-          <div class="proc"><div class="yrs">2021 – 2023</div><h3>The floor</h3><div class="co">IDEX · BAND-IT · Value Stream Manager</div></div>
+          <div class="proc"><div class="yrs">Sep 2021 – Dec 2023</div><h3>The floor</h3><div class="co">IDEX · BAND-IT · Value Stream Manager</div></div>
           <div class="data">
             <div><span>Value stream</span><b>$50M, 3 shifts</b></div>
             <div><span>On-time delivery</span><b>60→90%</b></div>
+            <div><span>Backlog</span><b>6 → &lt;1 day</b></div>
             <div><span>OEE</span><b>70→79%</b></div>
-            <div><span>Built</span><b>Power BI OEE</b></div>
+            <div><span>Recordables</span><b>0 in 2 yrs</b></div>
+          </div>
+        </div>
+        <div class="station">
+          <div class="proc"><div class="yrs">2024 – 2025</div><h3>The whole plant</h3><div class="co">Airxcel · Aqua-Hot · Mfg. Manager</div></div>
+          <div class="data">
+            <div><span>Direct labor</span><b>5.0→3.8%</b></div>
+            <div><span>Harness work</span><b>−20%</b></div>
+            <div><span>SIOP</span><b>built from zero</b></div>
+            <div><span>Remit</span><b>full site</b></div>
           </div>
         </div>
         <div class="station now">
-          <div class="proc"><div class="yrs">2024 – now</div><h3>Plant to lab</h3><div class="co">Airxcel · Aqua-Hot, then KBI Biopharma</div></div>
+          <div class="proc"><div class="yrs">Jun 2025 – now</div><h3>Plant to lab</h3><div class="co">KBI Biopharma · Sr. Mgr, OpEx</div></div>
           <div class="data">
-            <div><span>Direct labor</span><b>5.0→3.8%</b></div>
-            <div><span>SIOP</span><b>built from zero</b></div>
-            <div><span>OpEx yr-1</span><b>$1.1M</b></div>
-            <div><span>Lab SKUs</span><b>600+</b></div>
+            <div><span>Year one</span><b>$1.1M</b></div>
+            <div><span>Kanban SKUs</span><b>600</b></div>
+            <div><span>Lab capacity</span><b>+25%</b></div>
+            <div><span>Operator travel</span><b>−85%</b></div>
             <div><span>Partner</span><b>CSO level</b></div>
           </div>
         </div>
       </div>
-      <div class="timeline-ladder"><span>~5 yrs</span><span>~1 yr</span><span>9 yrs</span><span>2 yrs</span><span>2024 →</span></div>
+      <div class="timeline-ladder"><span>5 yrs</span><span>1 yr</span><span>9 yrs</span><span>2 yrs</span><span>1 yr</span><span>now</span></div>
     </div>
     <p class="scroll-hint">Swipe sideways to see the whole map.</p>
   </section>
@@ -328,17 +359,17 @@ footer { padding-block: 22px; font-size: .82rem; color: var(--muted); }
       <article class="card">
         <div class="card-top"><span>BIOPHARMA · 2026</span><span class="hole"></span></div>
         <div class="card-body">
-          <h3>One data model for lab turnaround</h3>
-          <p>Designed a data architecture joining the lab notebook (ELN) and LIMS through a datalake, so labs can see sample-to-result time from one trusted source. Read-only, with no change to validated systems.</p>
-          <div class="result"><span>Power BI · <b>17 pages</b></span><span>Excel trackers <b>→ live</b></span><span>Right-first-time metric</span></div>
+          <h3>Lean lab layout, live lab</h3>
+          <p>Redesigned lab layout and material flow around how scientists actually work, with point-of-use kanban at the bench. Done without stopping active work.</p>
+          <div class="result"><span>Capacity <b>+25%</b></span><span>Operator travel <b>−85%</b></span></div>
         </div>
       </article>
       <article class="card">
         <div class="card-top"><span>INDUSTRIAL · 2021–23</span><span class="hole"></span></div>
         <div class="card-body">
           <h3>Value stream turnaround at BAND-IT</h3>
-          <p>Ran a $50M, three-shift value stream and its manufacturing engineering team. Built a Power BI OEE system and a SCADA vision so losses were visible by shift.</p>
-          <div class="result"><span>OTD <b>60→90%</b></span><span>OEE <b>70→79%</b></span></div>
+          <p>Ran a $50M, three-shift value stream with 3 supervisors, 3 engineers and 50 operators. Used TPM and structured problem solving, and built a Power BI OEE system so losses showed up by shift.</p>
+          <div class="result"><span>OTD <b>60→90%</b></span><span>Backlog <b>6→&lt;1 day</b></span><span>OEE <b>70→79%</b></span></div>
         </div>
       </article>
       <article class="card">
@@ -365,13 +396,78 @@ footer { padding-block: 22px; font-size: .82rem; color: var(--muted); }
           <div class="result"><span>Savings <b>$7M</b></span><span>Freight <b>−$500K</b></span><span>Downtime <b>−50%</b></span></div>
         </div>
       </article>
-      <article class="card personal">
-        <div class="card-top"><span>PERSONAL BUILD · AI</span><span class="hole"></span></div>
+      <article class="card">
+        <div class="card-top"><span>MED DEVICE · 2012–14</span><span class="hole"></span></div>
         <div class="card-body">
-          <h3>Speech Practice app</h3>
-          <p>A free voice-practice web app I built with an AI coding assistant, first for my mom in India. Live loudness meter, spoken instructions, 11 languages, no sign-up.</p>
-          <div class="result"><span><a href="https://speechpractice.github.io/" target="_blank" rel="noopener">speechpractice.github.io</a></span><span>Web Audio · <b>11 languages</b></span></div>
+          <h3>Contract manufacturing network</h3>
+          <p>Managed contract manufacturers across the US, Mexico and Costa Rica: qualification, standard processes and metrics. Used value stream mapping and parametric release to take time out of the chain.</p>
+          <div class="result"><span>Savings <b>$3M</b></span><span>Lead time <b>−10 days</b></span></div>
         </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="wrap" id="build">
+    <div class="sec-head">
+      <p class="label">Data infrastructure · machine learning · kanban · AI</p>
+      <h2>Things I built</h2>
+      <p>I'm an operations leader, not a software developer. Using Python, Power BI and AI coding assistants, I build the tools my teams need instead of waiting for them.</p>
+    </div>
+    <div class="builds">
+      <article class="build wide">
+        <div class="build-head"><span class="tag">Data infrastructure</span><span class="label">2026</span></div>
+        <h3>Lab sample turnaround data architecture</h3>
+        <p>Lab status lived in four separate Excel trackers, typed in again on top of the lab notebook and LIMS. I designed one data pipeline to replace them, so turnaround and cycle time come straight from the systems people already use.</p>
+        <div class="pipe" role="img" aria-label="Pipeline: ELN and LIMS feed a daily read-only extract into a datalake, then a Power BI model, then lab dashboards">
+          <div><b>ELN + LIMS</b><span>source systems</span></div>
+          <div><b>Daily extract</b><span>read-only, event-level</span></div>
+          <div><b>Datalake</b><span>joined on sample, ELN, batch</span></div>
+          <div><b>Power BI</b><span>one semantic model</span></div>
+          <div class="end"><b>17 live pages</b><span>2 lab groups</span></div>
+        </div>
+        <div class="result"><span>Sample turnaround</span><span>Cycle time by step</span><span>Right first time</span><span>GxP: <b>no write-back</b></span></div>
+      </article>
+      <article class="build">
+        <div class="build-head"><span class="tag">Kanban automation</span><span class="label">2025–26</span></div>
+        <h3>Kanban cards generated from code</h3>
+        <p>Generated 625 kanban cards from the item master instead of typing them by hand. Power BI then tracks live stock and expiry, and flags what to re-order and when min/max should move.</p>
+        <div class="result"><span>Cards <b>625</b></span><span>SKUs <b>600</b>, SAP-linked</span></div>
+      </article>
+      <article class="build">
+        <div class="build-head"><span class="tag">Machine learning</span><span class="label">Proof of concept</span></div>
+        <h3>ML decision support for cell line development</h3>
+        <p>Built a machine-learning proof of concept to support codon-optimization choices, as a predictive aid for scientists. The scientists still make the call.</p>
+        <div class="result"><span>Python</span><span>Decision support</span></div>
+      </article>
+      <article class="build">
+        <div class="build-head"><span class="tag">Applied AI</span><span class="label">2026</span></div>
+        <h3>GxP-safe AI assistant pilot</h3>
+        <p>Designed a pilot for six read-only AI assistants: process mapping, test method extraction, batch record checks and more. Each one has one allowed input and one human check. Compared three enterprise platforms on audit, data and cost.</p>
+        <div class="result"><span>Assistants <b>6</b></span><span>AI assists, <b>validated systems decide</b></span></div>
+      </article>
+      <article class="build">
+        <div class="build-head"><span class="tag">Python · Streamlit</span><span class="label">2025</span></div>
+        <h3>OEE and OPE tracker</h3>
+        <p>A shift-by-shift app that logs downtime, output and defects, then computes availability, performance and quality. It shows OEE beside OPE, trends, and top and bottom machines.</p>
+        <div class="result"><span>SQLite</span><span>CSV export</span></div>
+      </article>
+      <article class="build">
+        <div class="build-head"><span class="tag">Python · Streamlit</span><span class="label">2025</span></div>
+        <h3>Biopharma escalation system</h3>
+        <p>Five linked trackers for a manufacturing floor: downtime, quality deviations with 5W2H, GMP document issues, material shortages and Tier 1 critical escalations.</p>
+        <div class="result"><span>Trackers <b>5</b></span><span>Tiered escalation</span></div>
+      </article>
+      <article class="build">
+        <div class="build-head"><span class="tag">Python · Streamlit</span><span class="label">2025</span></div>
+        <h3>Courtside basketball stats</h3>
+        <p>A tap-friendly app for logging team stats during a game. It builds the box score on the spot and exports clean CSVs.</p>
+        <div class="result"><span><a href="https://github.com/vjpowerhouse/Basketball-stats" target="_blank" rel="noopener">GitHub repo</a></span></div>
+      </article>
+      <article class="build personal wide">
+        <div class="build-head"><span class="tag">Personal · AI-built</span><span class="label">2026</span></div>
+        <h3>Speech Practice app</h3>
+        <p>A free voice-practice web app, built first for my mom in India. It has a live loudness meter, spoken instructions and 11 languages. No sign-up, and data stays on the phone.</p>
+        <div class="result"><span><a href="https://speechpractice.github.io/" target="_blank" rel="noopener">speechpractice.github.io</a></span></div>
       </article>
     </div>
   </section>
@@ -433,6 +529,8 @@ footer { padding-block: 22px; font-size: .82rem; color: var(--muted); }
       <div class="edu-list">
         <div class="edu-item"><span class="yr">Cert.</span><div><b>Lean Six Sigma Black Belt</b><span>Medtronic</span></div></div>
         <div class="edu-item"><span class="yr">Cert.</span><div><b>Lean Six Sigma Green Belt; Advanced TPS workshop</b><span>University of Tennessee · Y-Datum</span></div></div>
+        <div class="edu-item"><span class="yr">Cert.</span><div><b>Situational and Servant Leadership</b><span>Blanchard</span></div></div>
+        <div class="edu-item"><span class="yr">IDEX</span><div><b>Customer Obsession Award</b><span>IDEX Corporation</span></div></div>
         <div class="edu-item"><span class="yr">2018</span><div><b>People's Choice Award</b><span>Medtronic Asian healthcare innovation competition</span></div></div>
         <div class="edu-item"><span class="yr">2016</span><div><b>Best project, Surgical division</b><span>Covidien "Bring the Gold" Lean Six Sigma competition</span></div></div>
       </div>
