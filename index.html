@@ -157,6 +157,13 @@ section { padding-block: 64px 0; }
 .pipe span { font-size: .76rem; color: var(--muted); }
 .pipe .end { background: var(--kanban); color: var(--kanban-ink); }
 .pipe .end span { color: var(--kanban-ink); }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; margin-top: 4px; }
+.split > div { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.qlist { margin: 0; padding-left: 1.6em; display: flex; flex-direction: column; gap: 3px; font-size: .9rem; font-variant-numeric: tabular-nums; }
+.qlist li::marker { font-family: var(--mono); color: var(--muted); font-size: .8rem; }
+.callout { background: var(--bg); border: 1px solid var(--line); padding: 14px; }
+.callout p:not(.label) { font-size: .9rem; color: var(--ink); }
+.callout .label + p { margin-top: -2px; }
 
 /* Stack */
 .stack { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 2px solid var(--ink); }
@@ -194,6 +201,7 @@ footer { padding-block: 22px; font-size: .82rem; color: var(--muted); }
   .strip div:nth-child(n+3) { border-top: 1px solid var(--line); }
   .cards, .builds { grid-template-columns: minmax(0, 1fr); }
   .pipe { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .split { grid-template-columns: minmax(0, 1fr); }
   .pipe div:not(:last-child)::after { content: "↓"; right: auto; left: 50%; top: auto; bottom: -19px; transform: translateX(-50%); }
   .stack { grid-template-columns: minmax(0, 1fr); }
   .layer + .layer { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); }
@@ -420,17 +428,40 @@ footer { padding-block: 22px; font-size: .82rem; color: var(--muted); }
     </div>
     <div class="builds">
       <article class="build wide">
-        <div class="build-head"><span class="tag">Data infrastructure</span><span class="label">2026</span></div>
-        <h3>Lab sample turnaround data architecture</h3>
-        <p>Lab status lived in four separate Excel trackers, typed in again on top of the lab notebook and LIMS. I designed one data pipeline to replace them, so turnaround and cycle time come straight from the systems people already use.</p>
+        <div class="build-head"><span class="tag">Data infrastructure · Power BI</span><span class="label">2026 · in lab review, going live next</span></div>
+        <h3>Lab sample turnaround: from a dozen Excel trackers to one live view</h3>
+        <p>Analysts kept 10 to 12 Excel trackers up to date by hand, copying status out of the lab notebook (ELN) and LIMS. Nobody could say how long a sample took from receipt to QA review. I mapped the sample journey step by step, found the timestamp each system already records, and designed a pipeline so the numbers come from the systems themselves.</p>
         <div class="pipe" role="img" aria-label="Pipeline: ELN and LIMS feed a daily read-only extract into a datalake, then a Power BI model, then lab dashboards">
           <div><b>ELN + LIMS</b><span>source systems</span></div>
-          <div><b>Daily extract</b><span>read-only, event-level</span></div>
+          <div><b>Daily extract</b><span>read-only, one row per event</span></div>
           <div><b>Datalake</b><span>joined on sample, ELN, batch</span></div>
           <div><b>Power BI</b><span>one semantic model</span></div>
-          <div class="end"><b>17 live pages</b><span>2 lab groups</span></div>
+          <div class="end"><b>Live pages</b><span>labs, QA, leadership</span></div>
         </div>
-        <div class="result"><span>Sample turnaround</span><span>Cycle time by step</span><span>Right first time</span><span>GxP: <b>no write-back</b></span></div>
+        <div class="split">
+          <div>
+            <p class="label">Ten pages, one question each</p>
+            <ol class="qlist">
+              <li>Which samples are open, and which are oldest?</li>
+              <li>Where is a given sample right now?</li>
+              <li>Is turnaround improving, and which stage holds the time?</li>
+              <li>Which tests are slowest: waiting or testing?</li>
+              <li>What test work is open?</li>
+              <li>What is in cold storage, and what can be disposed?</li>
+              <li>What stability pulls are coming?</li>
+              <li>Which batches are waiting to release?</li>
+              <li>How much testing comes due each week?</li>
+              <li>How many instrument runs do we need?</li>
+            </ol>
+          </div>
+          <div class="callout">
+            <p class="label">Problem solved along the way</p>
+            <p><b>LIMS doesn't record instrument runs.</b> So I inferred them: tests of the same method and project peer-reviewed on the same day count as one run, and run size is the 12-month median. Equipment maximums override history when they are smaller. That turns a sample backlog into the number of runs a lab actually has to schedule.</p>
+            <p class="label">How turnaround is measured</p>
+            <p>Median and 80th-percentile days from receipt to QA review, % within a 30-day target, and a stage waterfall that shows where the days go.</p>
+          </div>
+        </div>
+        <div class="result"><span>Excel trackers <b>10–12 → 0</b></span><span>Right first time</span><span>Data clean-up surfaced in first review</span><span>GxP: <b>no write-back</b></span></div>
       </article>
       <article class="build">
         <div class="build-head"><span class="tag">Kanban automation</span><span class="label">2025–26</span></div>
