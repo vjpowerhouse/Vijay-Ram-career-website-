@@ -1,0 +1,475 @@
+<title>Vijay Ram · Lean + AI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Vijay Ramasubramanian (Ram): operational excellence leader, Lean Six Sigma Black Belt, building where the Toyota Production System meets data and AI.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: the career reads as a value stream map. Each job is a process box with its data box underneath,
+   joined by push arrows; projects below are kanban cards. Yellow = the kanban card, used sparingly. */
+:root {
+  --bg: #f3f4f1;
+  --surface: #ffffff;
+  --ink: #17222b;
+  --muted: #56636c;
+  --line: #d3d8d6;
+  --steel: #2c4a5e;
+  --kanban: #f2c230;
+  --kanban-ink: #2b2100;
+  --good: #2f7a52;
+  --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11181d; --surface: #182228; --ink: #e6ebe9; --muted: #9aa8b0; --line: #2c3a42;
+    --steel: #8db7d1; --kanban: #f2c230; --kanban-ink: #2b2100; --good: #6cc597; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11181d; --surface: #182228; --ink: #e6ebe9; --muted: #9aa8b0; --line: #2c3a42;
+  --steel: #8db7d1; --kanban: #f2c230; --kanban-ink: #2b2100; --good: #6cc597; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.6; margin: 0; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--display); line-height: 1.08; margin: 0; text-wrap: balance; }
+p, ul { margin: 0; }
+a { color: var(--steel); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--kanban); outline-offset: 2px; }
+.label { font-family: var(--mono); font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Nav */
+nav { border-bottom: 1px solid var(--line); }
+nav .wrap { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-block: 14px; flex-wrap: wrap; }
+.mark { font-family: var(--display); font-weight: 800; font-stretch: 112%; letter-spacing: .02em; text-decoration: none; color: var(--ink); }
+nav ul { list-style: none; padding: 0; display: flex; gap: 18px; flex-wrap: wrap; font-size: .92rem; }
+nav ul a { color: var(--muted); text-decoration: none; }
+nav ul a:hover { color: var(--ink); }
+
+/* Hero */
+.hero { padding-block: 56px 40px; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 40px; align-items: end; }
+.hero h1 { font-size: clamp(2.6rem, 7vw, 5.2rem); font-weight: 900; font-stretch: 70%; text-transform: uppercase; letter-spacing: -.005em; }
+.hero h1 span { display: block; font-stretch: 125%; font-weight: 300; font-size: .34em; letter-spacing: .04em; color: var(--muted); text-transform: none; margin-top: 10px; }
+.thesis { font-size: 1.2rem; max-width: 34ch; margin-top: 20px; }
+.thesis mark { background: linear-gradient(transparent 58%, var(--kanban) 58%); color: inherit; padding: 0 2px; }
+.hero-side { display: flex; flex-direction: column; gap: 14px; }
+.creds { display: flex; flex-wrap: wrap; gap: 8px; }
+.cred { font-family: var(--mono); font-size: .78rem; border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; background: var(--surface); }
+.contact-row { display: flex; flex-direction: column; gap: 4px; font-size: .95rem; }
+.contact-row b { font-weight: 600; }
+
+/* Stat strip */
+.strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 2px solid var(--ink); border-bottom: 1px solid var(--line); }
+.strip div { padding: 18px 16px 18px 0; display: flex; flex-direction: column; gap: 2px; }
+.strip div + div { border-left: 1px solid var(--line); padding-left: 16px; }
+.strip strong { font-family: var(--display); font-size: 2rem; font-weight: 800; font-stretch: 80%; font-variant-numeric: tabular-nums; }
+.strip span { font-size: .88rem; color: var(--muted); }
+
+section { padding-block: 64px 0; }
+.sec-head { display: flex; flex-direction: column; gap: 8px; margin-bottom: 28px; max-width: 64ch; }
+.sec-head h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 800; font-stretch: 85%; }
+.sec-head p { color: var(--muted); }
+
+/* Value stream */
+.vsm-scroll { overflow-x: auto; padding-bottom: 8px; }
+.vsm { display: grid; grid-template-columns: repeat(5, minmax(190px, 1fr)); gap: 0; min-width: 980px; }
+.station { display: flex; flex-direction: column; position: relative; padding-right: 26px; }
+.station:not(:last-child)::after {
+  content: ""; position: absolute; right: 4px; top: 38px; width: 18px; height: 10px;
+  background: repeating-linear-gradient(90deg, var(--ink) 0 4px, transparent 4px 7px);
+  clip-path: polygon(0 20%, 70% 20%, 70% 0, 100% 50%, 70% 100%, 70% 80%, 0 80%);
+}
+.proc { border: 2px solid var(--ink); background: var(--surface); padding: 10px 12px; }
+.proc .yrs { font-family: var(--mono); font-size: .75rem; color: var(--muted); }
+.proc h3 { font-size: 1.05rem; font-weight: 700; font-stretch: 90%; margin-top: 2px; }
+.proc .co { font-size: .85rem; color: var(--muted); }
+.data { border: 2px solid var(--ink); border-top: 0; background: var(--bg); padding: 10px 12px; font-family: var(--mono); font-size: .76rem; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.data div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dotted var(--line); padding-bottom: 3px; }
+.data div:last-child { border-bottom: 0; }
+.data b { font-weight: 500; color: var(--ink); text-align: right; }
+.data span { color: var(--muted); }
+.station.now .proc { background: var(--kanban); color: var(--kanban-ink); border-color: var(--ink); }
+.station.now .proc .yrs, .station.now .proc .co { color: var(--kanban-ink); }
+.timeline-ladder { margin-top: 14px; min-width: 980px; font-family: var(--mono); font-size: .74rem; color: var(--muted); display: grid; grid-template-columns: repeat(5, minmax(190px, 1fr)); }
+.timeline-ladder span { border-top: 2px solid var(--muted); padding-top: 4px; margin-right: 26px; }
+.scroll-hint { display: none; font-size: .82rem; color: var(--muted); margin-top: 8px; }
+
+/* Featured case study */
+.case { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 36px; background: var(--surface); border: 1px solid var(--line); padding: 28px; }
+.case h3 { font-size: 1.6rem; font-weight: 800; font-stretch: 85%; }
+.case-body { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.dmaic { display: flex; flex-direction: column; gap: 10px; }
+.dmaic div { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: start; }
+.dmaic i { font-style: normal; font-family: var(--display); font-weight: 900; font-size: 1rem; width: 30px; height: 30px; display: grid; place-items: center; border: 2px solid var(--ink); }
+.dmaic p { font-size: .95rem; }
+.chart { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.chart-total { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.chart-total strong { font-family: var(--display); font-size: 3rem; font-weight: 900; font-stretch: 75%; line-height: 1; }
+.bars { display: flex; flex-direction: column; gap: 9px; }
+.bar { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) 4.2rem; gap: 10px; align-items: center; font-size: .86rem; }
+.bar .track { height: 14px; background: var(--bg); border: 1px solid var(--line); }
+.bar .fill { height: 100%; background: var(--steel); }
+.bar.top .fill { background: var(--kanban); }
+.bar .v { font-family: var(--mono); font-size: .8rem; text-align: right; }
+.case-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-top: 6px; }
+.case-kpis div { background: var(--surface); padding: 10px; display: flex; flex-direction: column; }
+.case-kpis b { font-family: var(--display); font-size: 1.4rem; font-weight: 800; font-stretch: 80%; }
+.case-kpis span { font-size: .78rem; color: var(--muted); }
+.note { font-size: .82rem; color: var(--muted); }
+
+/* Kanban cards */
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 22px; }
+.card { background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; min-width: 0; }
+.card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 14px; border-bottom: 1px dashed var(--line); font-family: var(--mono); font-size: .72rem; color: var(--muted); }
+.card-top .hole { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--line); flex: none; }
+.card-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.card h3 { font-size: 1.15rem; font-weight: 700; font-stretch: 90%; }
+.card p { font-size: .93rem; color: var(--muted); }
+.result { margin-top: auto; display: flex; flex-wrap: wrap; gap: 6px; padding-top: 6px; }
+.result span { font-family: var(--mono); font-size: .76rem; background: var(--bg); border: 1px solid var(--line); padding: 3px 7px; }
+.result span b { color: var(--good); font-weight: 500; }
+.card.personal { border-color: var(--kanban); }
+.card.personal .card-top { background: var(--kanban); color: var(--kanban-ink); border-bottom-color: var(--kanban); }
+.card.personal .card-top .hole { border-color: var(--kanban-ink); }
+
+/* Stack */
+.stack { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 2px solid var(--ink); }
+.layer { padding: 20px 20px 20px 0; display: flex; flex-direction: column; gap: 10px; }
+.layer + .layer { border-left: 1px solid var(--line); padding-left: 20px; }
+.layer h3 { font-size: 1.2rem; font-weight: 800; font-stretch: 85%; }
+.layer ul { padding-left: 1.1em; display: flex; flex-direction: column; gap: 4px; font-size: .93rem; }
+
+/* Education */
+.edu { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 36px; }
+.edu-list { display: flex; flex-direction: column; }
+.edu-item { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.edu-item .yr { font-family: var(--mono); font-size: .82rem; color: var(--muted); padding-top: 2px; }
+.edu-item b { display: block; font-weight: 600; }
+.edu-item span { font-size: .9rem; color: var(--muted); }
+
+/* Heading / closing */
+.closing { margin-top: 72px; background: var(--ink); color: var(--bg); }
+.closing .wrap { padding-block: 56px; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 36px; align-items: center; }
+.closing h2 { font-size: clamp(2rem, 5vw, 3.4rem); font-weight: 900; font-stretch: 72%; text-transform: uppercase; }
+.closing h2 em { font-style: normal; color: var(--kanban); }
+.closing p { color: color-mix(in srgb, var(--bg) 78%, var(--ink)); margin-top: 14px; max-width: 46ch; }
+.ppr { font-family: var(--mono); font-size: .8rem; letter-spacing: .14em; margin-top: 18px; color: var(--kanban); }
+.contact-box { border: 1px solid color-mix(in srgb, var(--bg) 30%, var(--ink)); padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.contact-box .label { color: color-mix(in srgb, var(--bg) 65%, var(--ink)); }
+.contact-box a { color: var(--bg); }
+.copy { align-self: flex-start; font: 600 .9rem var(--body); background: var(--kanban); color: var(--kanban-ink); border: 0; padding: 10px 16px; min-height: 44px; cursor: pointer; }
+footer { padding-block: 22px; font-size: .82rem; color: var(--muted); }
+
+@media (max-width: 820px) {
+  .hero, .case, .edu, .closing .wrap { grid-template-columns: minmax(0, 1fr); }
+  .hero { padding-block: 36px 28px; gap: 24px; }
+  .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .strip div:nth-child(3) { border-left: 0; padding-left: 0; }
+  .strip div:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .cards { grid-template-columns: minmax(0, 1fr); }
+  .stack { grid-template-columns: minmax(0, 1fr); }
+  .layer + .layer { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); }
+  .case { padding: 18px; }
+  .bar { grid-template-columns: minmax(0, 8rem) minmax(0, 1fr) 3.8rem; }
+  .scroll-hint { display: block; }
+  nav ul { gap: 12px; }
+}
+@media (min-width: 821px) and (max-width: 1000px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: no-preference) {
+  .fill { animation: grow .9s cubic-bezier(.2,.7,.2,1) both; transform-origin: left; }
+  @keyframes grow { from { transform: scaleX(.15); } to { transform: scaleX(1); } }
+}
+</style>
+
+<nav>
+  <div class="wrap">
+    <a class="mark" href="#top">VIJAY RAM</a>
+    <ul>
+      <li><a href="#career">Career</a></li>
+      <li><a href="#work">Projects</a></li>
+      <li><a href="#ai">Data + AI</a></li>
+      <li><a href="#education">Education</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="wrap" id="top">
+  <div class="hero">
+    <div>
+      <p class="label">Operational Excellence · Lean Six Sigma Black Belt · MBA</p>
+      <h1>Vijay Ramasubramanian<span>Ram · Centennial, Colorado</span></h1>
+      <p class="thesis">I turn strategy into results with the Toyota Production System, then add the <mark>data and AI layer</mark> that makes the gains stick.</p>
+    </div>
+    <div class="hero-side">
+      <div class="creds">
+        <span class="cred">LSS Black Belt</span>
+        <span class="cred">MBA</span>
+        <span class="cred">MS Mfg. Eng.</span>
+        <span class="cred">Power BI</span>
+        <span class="cred">Python</span>
+      </div>
+      <div class="contact-row">
+        <span><b>Email</b> · vjkumar@gmail.com</span>
+        <span><b>LinkedIn</b> · <a href="https://www.linkedin.com/in/vijayrrs/" target="_blank" rel="noopener">linkedin.com/in/vijayrrs</a></span>
+      </div>
+    </div>
+  </div>
+  <div class="strip">
+    <div><strong class="num">20 yrs</strong><span>Lean and operations, 2006 to now</span></div>
+    <div><strong class="num">5</strong><span>industries: auto, electronics, med device, industrial, biopharma</span></div>
+    <div><strong class="num">$337K</strong><span>annual benefit, latest program, validated with finance</span></div>
+    <div><strong class="num">60→90%</strong><span>on-time delivery on a $50M value stream</span></div>
+  </div>
+</header>
+
+<main>
+  <section class="wrap" id="career">
+    <div class="sec-head">
+      <p class="label">Current-state map · 2006 → today</p>
+      <h2>My career as a value stream</h2>
+      <p>Five stations, each one wider in scope than the last. Every box carries its own data, the way a real value stream map does.</p>
+    </div>
+    <div class="vsm-scroll" tabindex="0" aria-label="Career value stream map">
+      <div class="vsm">
+        <div class="station">
+          <div class="proc"><div class="yrs">2006 – 2011</div><h3>Foundation</h3><div class="co">Federal-Mogul · Lean coordinator, supervisor</div></div>
+          <div class="data">
+            <div><span>Team led</span><b>100 operators</b></div>
+            <div><span>UPLH</span><b>+20%</b></div>
+            <div><span>Backorder cleared</span><b>$1.2M</b></div>
+            <div><span>Labor cost</span><b>−$300K</b></div>
+            <div><span>Plant re-layout</span><b>200K sq ft</b></div>
+          </div>
+        </div>
+        <div class="station">
+          <div class="proc"><div class="yrs">2011 – 2012</div><h3>Lean in electronics</h3><div class="co">Motorola Solutions · Sr. Staff IE</div></div>
+          <div class="data">
+            <div><span>Inventory</span><b>−$300K</b></div>
+            <div><span>Material handling</span><b>−$90K</b></div>
+            <div><span>SMT changeover</span><b>−50%</b></div>
+            <div><span>Method</span><b>2-bin kanban</b></div>
+          </div>
+        </div>
+        <div class="station">
+          <div class="proc"><div class="yrs">2012 – 2021</div><h3>The system</h3><div class="co">Medtronic · Divisional, then Sr. OpEx Leader</div></div>
+          <div class="data">
+            <div><span>FY21 cost-down</span><b>$7M</b></div>
+            <div><span>COGS program</span><b>$100M</b></div>
+            <div><span>Cell DPMO</span><b>−50%</b></div>
+            <div><span>Scrap</span><b>−25%</b></div>
+            <div><span>Kaizen + A3</span><b>50+</b></div>
+          </div>
+        </div>
+        <div class="station">
+          <div class="proc"><div class="yrs">2021 – 2023</div><h3>The floor</h3><div class="co">IDEX · BAND-IT · Value Stream Manager</div></div>
+          <div class="data">
+            <div><span>Value stream</span><b>$50M, 3 shifts</b></div>
+            <div><span>On-time delivery</span><b>60→90%</b></div>
+            <div><span>OEE</span><b>70→79%</b></div>
+            <div><span>Built</span><b>Power BI OEE</b></div>
+          </div>
+        </div>
+        <div class="station now">
+          <div class="proc"><div class="yrs">2024 – now</div><h3>Plant to lab</h3><div class="co">Airxcel · Aqua-Hot, then KBI Biopharma</div></div>
+          <div class="data">
+            <div><span>Direct labor</span><b>5.0→3.8%</b></div>
+            <div><span>SIOP</span><b>built from zero</b></div>
+            <div><span>OpEx yr-1</span><b>$1.1M</b></div>
+            <div><span>Lab SKUs</span><b>600+</b></div>
+            <div><span>Partner</span><b>CSO level</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="timeline-ladder"><span>~5 yrs</span><span>~1 yr</span><span>9 yrs</span><span>2 yrs</span><span>2024 →</span></div>
+    </div>
+    <p class="scroll-hint">Swipe sideways to see the whole map.</p>
+  </section>
+
+  <section class="wrap" id="work">
+    <div class="sec-head">
+      <p class="label">Featured case · DMAIC</p>
+      <h2>Lab consumables, fixed after years of false starts</h2>
+      <p>Earlier attempts started inside one lab and stopped at the next function's door. I set this one up across functions from day one. Details are generalized: no proprietary, client or personnel information.</p>
+    </div>
+    <article class="case">
+      <div class="case-body">
+        <div class="dmaic">
+          <div><i>D</i><p><b>Define.</b> Scientists and technicians spent over 80 hours a week finding, ordering and tracking supplies, across five labs with no system. Chartered with an owner in each function and sponsorship above them.</p></div>
+          <div><i>M</i><p><b>Measure.</b> Walked five current-state maps with the people doing the work. Baseline: 110 hrs/week, 600+ SKUs with no signal, 12+ storage locations.</p></div>
+          <div><i>A</i><p><b>Analyze.</b> One supplier base, one dock, one budget, and no common method. The inventory was never the problem. The missing system was.</p></div>
+          <div><i>I</i><p><b>Improve.</b> Two kanban loops sized by demand: re-stock cards for fast movers, re-order cards for slow ones. 625 cards generated by code from the item master.</p></div>
+          <div><i>C</i><p><b>Control.</b> Live stock and expiry in Power BI, min/max re-sizing flags, standard work, and a kamishibai audit. It now runs without me.</p></div>
+        </div>
+      </div>
+      <div class="chart">
+        <p class="label">Annualized benefit by source</p>
+        <div class="chart-total"><strong class="num">$337K</strong><span class="note">per year, validated with finance before it was claimed</span></div>
+        <div class="bars" role="img" aria-label="Benefit breakdown: SKU reduction and expiry $120K, inventory management $60K, ordering effort $47K, pick and put-away $41K, lab restock $39K, order tracking $29K">
+          <div class="bar top"><span>SKU cut, expiry, generics</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="v">$120.0K</span></div>
+          <div class="bar"><span>Inventory management</span><div class="track"><div class="fill" style="width:50.4%"></div></div><span class="v">$60.5K</span></div>
+          <div class="bar"><span>Ordering effort</span><div class="track"><div class="fill" style="width:39.5%"></div></div><span class="v">$47.4K</span></div>
+          <div class="bar"><span>Pick, put-away, disposal</span><div class="track"><div class="fill" style="width:34.5%"></div></div><span class="v">$41.4K</span></div>
+          <div class="bar"><span>Lab restock</span><div class="track"><div class="fill" style="width:32.8%"></div></div><span class="v">$39.4K</span></div>
+          <div class="bar"><span>Order tracking</span><div class="track"><div class="fill" style="width:24%"></div></div><span class="v">$28.9K</span></div>
+        </div>
+        <div class="case-kpis">
+          <div><b class="num">444</b><span>SKUs managed</span></div>
+          <div><b class="num">−50%</b><span>part numbers</span></div>
+          <div><b class="num">17</b><span>people, 8+ functions, none reporting to me</span></div>
+        </div>
+      </div>
+    </article>
+
+    <div class="cards">
+      <article class="card">
+        <div class="card-top"><span>BIOPHARMA · 2026</span><span class="hole"></span></div>
+        <div class="card-body">
+          <h3>One data model for lab turnaround</h3>
+          <p>Designed a data architecture joining the lab notebook (ELN) and LIMS through a datalake, so labs can see sample-to-result time from one trusted source. Read-only, with no change to validated systems.</p>
+          <div class="result"><span>Power BI · <b>17 pages</b></span><span>Excel trackers <b>→ live</b></span><span>Right-first-time metric</span></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card-top"><span>INDUSTRIAL · 2021–23</span><span class="hole"></span></div>
+        <div class="card-body">
+          <h3>Value stream turnaround at BAND-IT</h3>
+          <p>Ran a $50M, three-shift value stream and its manufacturing engineering team. Built a Power BI OEE system and a SCADA vision so losses were visible by shift.</p>
+          <div class="result"><span>OTD <b>60→90%</b></span><span>OEE <b>70→79%</b></span></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card-top"><span>MANUFACTURING · 2024–25</span><span class="hole"></span></div>
+        <div class="card-body">
+          <h3>Running the whole plant</h3>
+          <p>Led production, EHS, quality and maintenance at Aqua-Hot and owned the full operating budget. Built SIOP and capacity planning where none existed.</p>
+          <div class="result"><span>Direct labor <b>5.0→3.8%</b> of sales</span></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card-top"><span>MED DEVICE · 2014–19</span><span class="hole"></span></div>
+        <div class="card-body">
+          <h3>Surgical generator cell</h3>
+          <p>Converted a traditional line into a cell operating system using TPS subsystems, with engineering and production as one team.</p>
+          <div class="result"><span>DPMO <b>−50%</b></span><span>Lead time <b>−50%</b></span><span>Labor <b>−$200K</b></span></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card-top"><span>MED DEVICE · FY21</span><span class="hole"></span></div>
+        <div class="card-body">
+          <h3>$7M cost-down through COVID</h3>
+          <p>Led the factory staff on an A3 cost-down roadmap, with VAVE events and value stream workshops. Rebuilt freight with e-approvals in Teams and Smartsheet.</p>
+          <div class="result"><span>Savings <b>$7M</b></span><span>Freight <b>−$500K</b></span><span>Downtime <b>−50%</b></span></div>
+        </div>
+      </article>
+      <article class="card personal">
+        <div class="card-top"><span>PERSONAL BUILD · AI</span><span class="hole"></span></div>
+        <div class="card-body">
+          <h3>Speech Practice app</h3>
+          <p>A free voice-practice web app I built with an AI coding assistant, first for my mom in India. Live loudness meter, spoken instructions, 11 languages, no sign-up.</p>
+          <div class="result"><span><a href="https://speechpractice.github.io/" target="_blank" rel="noopener">speechpractice.github.io</a></span><span>Web Audio · <b>11 languages</b></span></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="wrap" id="ai">
+    <div class="sec-head">
+      <p class="label">What I add on top of classic Lean</p>
+      <h2>The data and AI layer</h2>
+      <p>Lean shows where the waste is. Data keeps it visible after the kaizen team goes home. AI takes the manual effort out of keeping it that way.</p>
+    </div>
+    <div class="stack">
+      <div class="layer">
+        <p class="label">01 · See the work</p>
+        <h3>Process improvement</h3>
+        <ul>
+          <li>Value stream mapping and standard work</li>
+          <li>DMAIC, A3 and structured root cause</li>
+          <li>Kaizen, SMED, TPM, kanban, heijunka</li>
+          <li>Lean lab and plant layout</li>
+          <li>Coached 100+ people; 10+ Green Belts certified</li>
+        </ul>
+      </div>
+      <div class="layer">
+        <p class="label">02 · Connect the handoffs</p>
+        <h3>Cross-functional flow</h3>
+        <ul>
+          <li>SIOP and capacity planning</li>
+          <li>SIPOC and standardized handoffs</li>
+          <li>Tiered visual management and metrics</li>
+          <li>Hoshin and annual strategy deployment</li>
+          <li>Supplier VAVE and procurement redesign</li>
+        </ul>
+      </div>
+      <div class="layer">
+        <p class="label">03 · Automate the effort</p>
+        <h3>Data, automation, AI</h3>
+        <ul>
+          <li>Power BI, Power Query and data models</li>
+          <li>Power Automate and SharePoint workflows</li>
+          <li>Python and Streamlit apps; VBA</li>
+          <li>Machine-learning proof of concept</li>
+          <li>LLM-assisted documents and analysis</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap" id="education">
+    <div class="sec-head">
+      <p class="label">Education · certification · recognition</p>
+      <h2>Training the eye</h2>
+    </div>
+    <div class="edu">
+      <div class="edu-list">
+        <div class="edu-item"><span class="yr">2011</span><div><b>MBA, General Management</b><span>University of Tennessee, Knoxville</span></div></div>
+        <div class="edu-item"><span class="yr">2006</span><div><b>MS, Manufacturing Engineering</b><span>University of Kentucky, Lexington</span></div></div>
+        <div class="edu-item"><span class="yr">2004</span><div><b>BE, Production Engineering</b><span>University of Madras, Chennai</span></div></div>
+      </div>
+      <div class="edu-list">
+        <div class="edu-item"><span class="yr">Cert.</span><div><b>Lean Six Sigma Black Belt</b><span>Medtronic</span></div></div>
+        <div class="edu-item"><span class="yr">Cert.</span><div><b>Lean Six Sigma Green Belt; Advanced TPS workshop</b><span>University of Tennessee · Y-Datum</span></div></div>
+        <div class="edu-item"><span class="yr">2018</span><div><b>People's Choice Award</b><span>Medtronic Asian healthcare innovation competition</span></div></div>
+        <div class="edu-item"><span class="yr">2016</span><div><b>Best project, Surgical division</b><span>Covidien "Bring the Gold" Lean Six Sigma competition</span></div></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<section class="closing" id="contact">
+  <div class="wrap">
+    <div>
+      <p class="label" style="color:var(--kanban)">Where I am headed</p>
+      <h2>Lean meets <em>AI</em></h2>
+      <p>I want to lead at the point where the Toyota Production System meets applied AI: fewer manual steps, faster decisions, and people spending their time on the work that matters.</p>
+      <p class="ppr">PEOPLE · PROCESS · RESULTS</p>
+    </div>
+    <div class="contact-box">
+      <p class="label">Get in touch</p>
+      <p id="email-text">vjkumar@gmail.com</p>
+      <button class="copy" id="copy-email" type="button">Copy email</button>
+      <p><a href="https://www.linkedin.com/in/vijayrrs/" target="_blank" rel="noopener">LinkedIn: linkedin.com/in/vijayrrs</a></p>
+    </div>
+  </div>
+</section>
+<footer class="wrap">© 2026 Vijay Ramasubramanian · Centennial, Colorado</footer>
+
+<script>
+document.getElementById("copy-email").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  try {
+    await navigator.clipboard.writeText("vjkumar@gmail.com");
+    btn.textContent = "Copied";
+  } catch (err) {
+    const r = document.createRange();
+    r.selectNodeContents(document.getElementById("email-text"));
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    btn.textContent = "Selected, press copy";
+  }
+  setTimeout(() => { btn.textContent = "Copy email"; }, 2000);
+});
+</script>
