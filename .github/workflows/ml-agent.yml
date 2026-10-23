@@ -1,0 +1,21 @@
+name: ML Agent tests
+
+on:
+  push:
+    paths: ['ml-agent/**', '.github/workflows/ml-agent.yml']
+  pull_request:
+    paths: ['ml-agent/**', '.github/workflows/ml-agent.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Models, DOE math and privacy lint
+        run: node --test ml-agent/tests/run-tests.js

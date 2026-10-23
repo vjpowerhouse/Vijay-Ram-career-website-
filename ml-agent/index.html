@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- Privacy lock. The browser enforces this policy: the page may load its own files, and
+     nothing else. connect-src 'none' blocks fetch, XHR, WebSocket and beacons; img-src
+     blocks image "pixels" to any server; form-action blocks form posts. Your data has no
+     way out of this tab. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src data: blob:; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="A private, in-browser machine learning agent: drop in data and it picks the best algorithm, explains the drivers and designs your next experiment (DOE).">
+<title>ML Agent</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232c4a5e'/%3E%3Ccircle cx='9' cy='22' r='3' fill='%23f2c230'/%3E%3Ccircle cx='16' cy='14' r='3' fill='%23fff'/%3E%3Ccircle cx='23' cy='9' r='3' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap top-row">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true"></span>ML Agent</a>
+    <a class="lock" href="#privacy"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 7V5a4 4 0 1 1 8 0v2h1v8H3V7h1zm2 0h4V5a2 2 0 1 0-4 0v2z"/></svg>Private: data never leaves this browser</a>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Supervised · unsupervised · regression · classification · DOE</p>
+      <h1>Drop in your data. The agent picks the algorithm, explains the drivers and designs your next experiment.</h1>
+      <p class="lede">It tests up to nine models on rows they have never seen, keeps the simplest one that wins, and turns the result into DMAIC next steps. Everything runs on your device. No upload, no account, no AI service.</p>
+    </div>
+  </section>
+
+  <section class="wrap step" id="load">
+    <div class="step-head"><span class="num">1</span><h2>Load data</h2></div>
+    <div class="load-grid">
+      <div class="card">
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept=".csv,.tsv,.txt,text/csv,text/plain">
+          <b>Choose a CSV file</b>
+          <span>or drag it here. One row per observation, column names in the first row.</span>
+        </label>
+        <p class="hint">Excel? Save as CSV, or copy the cells and paste below.</p>
+        <label class="field-label" for="paste">Paste data</label>
+        <textarea id="paste" rows="5" spellcheck="false" placeholder="Temperature,Pressure,Yield&#10;180,60,87.2&#10;200,75,91.5"></textarea>
+        <div class="row-actions">
+          <button class="btn" id="use-paste" type="button">Use pasted data</button>
+          <button class="btn ghost" id="clear" type="button">Clear everything</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Or try a practice dataset</h3>
+        <p class="hint">Synthetic data, generated in your browser.</p>
+        <div class="samples" id="samples"></div>
+      </div>
+    </div>
+    <p class="error" id="load-error" role="alert" hidden></p>
+  </section>
+
+  <section class="wrap step" id="setup" hidden>
+    <div class="step-head"><span class="num">2</span><h2>Check the data and choose the goal</h2></div>
+    <div class="card">
+      <p id="data-summary" class="summary"></p>
+      <div class="controls">
+        <label>What do you want to predict?
+          <select id="target"></select>
+        </label>
+        <label>Problem type
+          <select id="task">
+            <option value="auto">Let the agent decide</option>
+            <option value="regression">Regression (predict a number)</option>
+            <option value="classification">Classification (predict a category)</option>
+          </select>
+        </label>
+        <label>For DOE optimization
+          <select id="goal">
+            <option value="max">Maximize the result</option>
+            <option value="min">Minimize the result</option>
+          </select>
+        </label>
+      </div>
+      <p class="hint" id="target-hint"></p>
+      <div class="table-scroll">
+        <table class="profile" id="profile"></table>
+      </div>
+      <details class="preview">
+        <summary>Preview the first rows</summary>
+        <div class="table-scroll"><table id="preview"></table></div>
+      </details>
+      <div class="row-actions">
+        <button class="btn primary" id="run" type="button">Run the agent</button>
+      </div>
+    </div>
+    <div class="card progress-card" id="progress" hidden aria-live="polite">
+      <div class="progress-row"><progress id="progress-bar" max="100" value="0"></progress><span id="progress-text"></span></div>
+      <ol class="agent-log" id="agent-log"></ol>
+    </div>
+    <p class="error" id="run-error" role="alert" hidden></p>
+  </section>
+
+  <section class="wrap step" id="results" hidden>
+    <div class="step-head"><span class="num">3</span><h2>Results</h2></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="card">
+      <h3>What the agent found</h3>
+      <ul class="insights" id="insights"></ul>
+    </div>
+    <div id="result-blocks"></div>
+  </section>
+
+  <section class="wrap step" id="next" hidden>
+    <div class="step-head"><span class="num">4</span><h2>Next steps</h2></div>
+    <ol class="dmaic" id="next-steps"></ol>
+    <div class="row-actions">
+      <button class="btn" id="download-report" type="button">Download report (.md)</button>
+      <button class="btn ghost" id="print" type="button">Print or save as PDF</button>
+    </div>
+  </section>
+
+  <section class="wrap step" id="doe">
+    <div class="step-head"><span class="num">5</span><h2>DOE builder</h2></div>
+    <div class="card">
+      <p id="doe-intro" class="summary">Plan a designed experiment from scratch, or let the agent pre-fill it after a run. Set each factor's low and high level; words (like Supplier A / Supplier B) make a categorical factor.</p>
+      <div class="table-scroll">
+        <table class="factors" id="factors"></table>
+      </div>
+      <div class="row-actions"><button class="btn ghost" id="add-factor" type="button">Add factor</button></div>
+      <div class="controls">
+        <label>Design
+          <select id="design-type"></select>
+        </label>
+        <label>Center points
+          <input id="centers" type="number" min="0" max="10" value="3">
+        </label>
+        <label>Replicates
+          <input id="reps" type="number" min="1" max="5" value="1">
+        </label>
+        <label>Response name
+          <input id="response-name" type="text" value="Response">
+        </label>
+        <label class="check"><input id="randomize" type="checkbox" checked> Randomize run order</label>
+      </div>
+      <p class="hint" id="design-purpose"></p>
+      <div class="row-actions"><button class="btn primary" id="generate" type="button">Generate run sheet</button></div>
+      <p class="error" id="doe-error" role="alert" hidden></p>
+      <div id="design-out"></div>
+    </div>
+  </section>
+
+  <section class="wrap step privacy" id="privacy">
+    <div class="step-head"><span class="num lock-num" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 7V5a4 4 0 1 1 8 0v2h1v8H3V7h1zm2 0h4V5a2 2 0 1 0-4 0v2z"/></svg></span><h2>How your data stays private</h2></div>
+    <div class="privacy-grid">
+      <div class="card">
+        <ul class="guarantees">
+          <li><b>Nothing is uploaded.</b> Your file is read by your own browser. All math (models, DOE, charts) runs in JavaScript on your device.</li>
+          <li><b>The browser is told to block every outgoing connection.</b> This page carries a security policy with <code>connect-src 'none'</code>, so even a bug or a bad add-on in this code could not send your data anywhere.</li>
+          <li><b>Nothing is stored.</b> No cookies, no local storage, no database. Close or refresh the tab and your data is gone.</li>
+          <li><b>No AI service sees it.</b> The agent is built from classic statistics and machine learning plus written rules. No LLM, no API key, no prompts sent anywhere.</li>
+          <li><b>No trackers.</b> No analytics, ads, web fonts or third-party scripts.</li>
+          <li><b>Works offline.</b> Once the page has loaded you can switch off Wi-Fi and it still works.</li>
+        </ul>
+        <p class="hint">Fine print: like any website, the host (GitHub Pages) sees that the page was opened. It never sees your data. Browser extensions you install can read any page, so use a clean browser profile for sensitive data.</p>
+      </div>
+      <div class="card">
+        <h3>Check it yourself</h3>
+        <ol class="verify">
+          <li>Open developer tools (F12) → Network tab, then run the agent. Only this page's own files appear.</li>
+          <li>Or press the button: the page tries to contact an outside server and the browser blocks it.</li>
+        </ol>
+        <button class="btn" id="self-test" type="button">Run privacy self-test</button>
+        <div id="self-test-out" class="self-test" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>Built by <a href="../">Vijay Ram</a>. Open source: every line is public and can be audited. Results support decisions; they do not replace process knowledge or validation.</p>
+  </div>
+</footer>
+
+<div class="tip" id="tip" role="tooltip" hidden></div>
+<script src="engine.js"></script>
+<script src="doe.js"></script>
+<script src="agent.js"></script>
+<script src="samples.js"></script>
+<script src="charts.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
