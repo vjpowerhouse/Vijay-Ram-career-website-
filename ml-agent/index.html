@@ -19,6 +19,10 @@
 <header class="top">
   <div class="wrap top-row">
     <a class="brand" href="./"><span class="logo" aria-hidden="true"></span>ML Agent</a>
+    <nav class="top-nav">
+      <a href="learn.html" target="_blank" rel="noopener noreferrer">Learn the concepts</a>
+      <button class="btn danger small" id="delete-top" type="button" hidden>Delete my data</button>
+    </nav>
     <a class="lock" href="#privacy"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 7V5a4 4 0 1 1 8 0v2h1v8H3V7h1zm2 0h4V5a2 2 0 1 0-4 0v2z"/></svg>Private: data never leaves this browser</a>
   </div>
 </header>
@@ -43,11 +47,12 @@
         </label>
         <p class="hint">Excel? Save as CSV, or copy the cells and paste below.</p>
         <label class="field-label" for="paste">Paste data</label>
-        <textarea id="paste" rows="5" spellcheck="false" placeholder="Temperature,Pressure,Yield&#10;180,60,87.2&#10;200,75,91.5"></textarea>
+        <textarea id="paste" rows="5" spellcheck="false" autocomplete="off" placeholder="Temperature,Pressure,Yield&#10;180,60,87.2&#10;200,75,91.5"></textarea>
         <div class="row-actions">
           <button class="btn" id="use-paste" type="button">Use pasted data</button>
           <button class="btn ghost" id="clear" type="button">Clear everything</button>
         </div>
+        <label class="check auto-del"><input type="checkbox" id="auto-delete" checked> Auto-delete my data after 30 minutes without activity</label>
       </div>
       <div class="card">
         <h3>Or try a practice dataset</h3>
@@ -56,6 +61,7 @@
       </div>
     </div>
     <p class="error" id="load-error" role="alert" hidden></p>
+    <p class="deleted" id="deleted-note" role="status" hidden></p>
   </section>
 
   <section class="wrap step" id="setup" hidden>
@@ -73,11 +79,8 @@
             <option value="classification">Classification (predict a category)</option>
           </select>
         </label>
-        <label>For DOE optimization
-          <select id="goal">
-            <option value="max">Maximize the result</option>
-            <option value="min">Minimize the result</option>
-          </select>
+        <label>Which result is better?
+          <select id="goal"></select>
         </label>
       </div>
       <p class="hint" id="target-hint"></p>
@@ -102,6 +105,7 @@
   <section class="wrap step" id="results" hidden>
     <div class="step-head"><span class="num">3</span><h2>Results</h2></div>
     <div class="tiles" id="tiles"></div>
+    <div class="card plan" id="plan"></div>
     <div class="card">
       <h3>What the agent found</h3>
       <ul class="insights" id="insights"></ul>
@@ -113,9 +117,11 @@
     <div class="step-head"><span class="num">4</span><h2>Next steps</h2></div>
     <ol class="dmaic" id="next-steps"></ol>
     <div class="row-actions">
-      <button class="btn" id="download-report" type="button">Download report (.md)</button>
+      <button class="btn" id="download-report" type="button">Download report (.html)</button>
       <button class="btn ghost" id="print" type="button">Print or save as PDF</button>
+      <button class="btn danger" id="delete-bottom" type="button">Finish and delete my data</button>
     </div>
+    <p class="hint">Deleting removes your data and every result from this page. Nothing was ever saved or sent anywhere. A report you download is your own file; delete it when you no longer need it.</p>
   </section>
 
   <section class="wrap step" id="doe">
@@ -155,7 +161,7 @@
         <ul class="guarantees">
           <li><b>Nothing is uploaded.</b> Your file is read by your own browser. All math (models, DOE, charts) runs in JavaScript on your device.</li>
           <li><b>The browser is told to block every outgoing connection.</b> This page carries a security policy with <code>connect-src 'none'</code>, so even a bug or a bad add-on in this code could not send your data anywhere.</li>
-          <li><b>Nothing is stored.</b> No cookies, no local storage, no database. Close or refresh the tab and your data is gone.</li>
+          <li><b>Nothing is stored, and you can delete on demand.</b> No cookies, no local storage, no database. Press <i>Finish and delete my data</i> when you are done. Data is also wiped automatically after 30 idle minutes, when you leave the page, or when you close or refresh the tab.</li>
           <li><b>No AI service sees it.</b> The agent is built from classic statistics and machine learning plus written rules. No LLM, no API key, no prompts sent anywhere.</li>
           <li><b>No trackers.</b> No analytics, ads, web fonts or third-party scripts.</li>
           <li><b>Works offline.</b> Once the page has loaded you can switch off Wi-Fi and it still works.</li>
@@ -187,6 +193,7 @@
 <script src="agent.js"></script>
 <script src="samples.js"></script>
 <script src="charts.js"></script>
+<script src="explain.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

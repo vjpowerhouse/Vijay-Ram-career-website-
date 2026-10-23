@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- Same privacy lock as the agent: this page loads its own files and can contact nothing else. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src data: blob:; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="Interactive lessons on machine learning and design of experiments, explained with analogies and hands-on visuals.">
+<title>ML Agent Academy</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232c4a5e'/%3E%3Ccircle cx='9' cy='22' r='3' fill='%23f2c230'/%3E%3Ccircle cx='16' cy='14' r='3' fill='%23fff'/%3E%3Ccircle cx='23' cy='9' r='3' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="learn">
+<a class="skip" href="#lesson">Skip to lesson</a>
+<header class="top">
+  <div class="wrap top-row">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true"></span>ML Agent Academy</a>
+    <nav class="top-nav"><a href="./">Open the agent</a></nav>
+  </div>
+</header>
+
+<main class="wrap learn-layout">
+  <aside class="learn-nav" aria-label="Lessons">
+    <p class="eyebrow">Lessons</p>
+    <label class="learn-select">Jump to a lesson <select id="lesson-select"></select></label>
+    <div id="lesson-list"></div>
+    <p class="score" id="score" aria-live="polite"></p>
+  </aside>
+  <article class="lesson" id="lesson" tabindex="-1"></article>
+</main>
+
+<footer class="foot">
+  <div class="wrap"><p>Every demo runs in your browser on made-up data. Quiz answers are kept only until you close the tab.</p></div>
+</footer>
+<div class="tip" id="tip" role="tooltip" hidden></div>
+<script src="engine.js"></script>
+<script src="doe.js"></script>
+<script src="agent.js"></script>
+<script src="charts.js"></script>
+<script src="explain.js"></script>
+<script src="learn.js"></script>
+</body>
+</html>

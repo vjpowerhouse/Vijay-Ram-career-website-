@@ -25,7 +25,7 @@
   // Horizontal bars: magnitude comparison across named items.
   function hbar(el, items, opt) {
     opt = opt || {};
-    const W = widthOf(el), rowH = 28, top = 8, bottom = 26;
+    const W = opt.width || widthOf(el), rowH = 28, top = 8, bottom = 26;
     const labelChars = Math.min(28, Math.max(...items.map(i => String(i.label).length), 4));
     const left = Math.min(W * 0.42, 14 + labelChars * 7), right = 64;
     const H = top + items.length * rowH + bottom;
@@ -110,7 +110,7 @@
     const sy = v => H - B - (v - ylo) / (yhi - ylo) * (H - T - B);
     let b = '';
     for (const t of niceTicks(ylo, yhi, 4)) if (t >= ylo && t <= yhi) b += '<line class="gridline" x1="' + L + '" x2="' + (W - R) + '" y1="' + sy(t) + '" y2="' + sy(t) + '"/><text x="' + (L - 6) + '" y="' + (sy(t) + 4) + '" text-anchor="end">' + esc(fmt(t)) + '</text>';
-    const xt = Array.from(new Set(xs)).sort((a, c) => a - c);
+    const xt = opt.xTicks || Array.from(new Set(xs)).sort((a, c) => a - c);
     const xLab = opt.xTickFmt || fmt;
     for (const t of xt) b += '<text x="' + sx(t) + '" y="' + (H - B + 16) + '" text-anchor="middle">' + esc(xLab(t)) + '</text>';
     b += '<line class="axis" x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) + '" y2="' + (H - B) + '"/>';
@@ -163,5 +163,63 @@
     document.addEventListener('scroll', () => { tip.hidden = true; }, { passive: true });
   }
 
-  root.Charts = { hbar, scatter, lines, confusion, legend, bindTips, SHAPES, esc, niceTicks };
+  function wrap(text, max) {
+    const words = String(text).split(' '), out = [];
+    let line = '';
+    for (const w of words) {
+      if ((line + ' ' + w).trim().length > max && line) { out.push(line); line = w; } else line = (line + ' ' + w).trim();
+    }
+    if (line) out.push(line);
+    return out.slice(0, 3).map((l, i, a) => (i === 2 && a.length === 3 && out.length > 3 ? trunc(l, max - 1) + '…' : trunc(l, max)));
+  }
+
+  /* Decision tree as a flowchart. opt.question(f, t) -> { q, leftIsYes }, opt.leaf(node) ->
+     [line, line], opt.leafClass(node) -> css class, opt.path: Set of nodes to highlight,
+     opt.maxDepth: deeper branches collapse into a "more questions" box. */
+  function treeDiagram(el, tree, opt) {
+    opt = opt || {};
+    const colW = opt.colW || 132, rowH = opt.rowH || 92, boxH = 50, maxDepth = opt.maxDepth || 99;
+    const nodes = [];
+    let leafCount = 0;
+    (function walk(node, depth) {
+      const v = { node, depth, cut: !node.leaf && depth >= maxDepth };
+      nodes.push(v);
+      if (node.leaf || v.cut) { v.x = leafCount++ * colW + colW / 2; return v; }
+      v.kids = [walk(node.left, depth + 1), walk(node.right, depth + 1)];
+      v.x = (v.kids[0].x + v.kids[1].x) / 2;
+      return v;
+    })(tree, 0);
+    const W = Math.max(leafCount * colW, 200), depthMax = Math.max(...nodes.map(n => n.depth));
+    const H = (depthMax + 1) * rowH - rowH + boxH + 12;
+    const bw = colW - 14, chars = Math.floor(bw / 6.6);
+    const path = opt.path || new Set();
+    let edges = '', boxes = '';
+    for (const v of nodes) {
+      const y = v.depth * rowH + 4;
+      if (v.kids) {
+        const qq = opt.question(v.node.f, v.node.t);
+        v.kids.forEach((k, i) => {
+          const yes = (i === 0) === qq.leftIsYes;
+          const ky = k.depth * rowH + 4, on = path.has(v.node) && path.has(k.node);
+          edges += '<path class="tedge' + (on ? ' on' : '') + '" d="M' + v.x + ' ' + (y + boxH) + ' C' + v.x + ' ' + (y + boxH + 22) + ' ' + k.x + ' ' + (ky - 22) + ' ' + k.x + ' ' + ky + '"/>';
+          edges += '<text class="tedge-lbl" x="' + ((v.x + k.x) / 2 + (i ? 8 : -8)) + '" y="' + (y + boxH + 20) + '" text-anchor="' + (i ? 'start' : 'end') + '">' + (yes ? 'yes' : 'no') + '</text>';
+        });
+        const lines = wrap(qq.q, chars);
+        boxes += '<g data-tip="' + esc(qq.q + '\n' + v.node.n + ' rows reach this question') + '"><rect class="tnode' + (path.has(v.node) ? ' on' : '') + '" x="' + (v.x - bw / 2) + '" y="' + y + '" width="' + bw + '" height="' + boxH + '" rx="6"/>';
+        lines.forEach((l, i) => { boxes += '<text class="tq" x="' + v.x + '" y="' + (y + boxH / 2 + 4 + (i - (lines.length - 1) / 2) * 14) + '" text-anchor="middle">' + esc(l) + '</text>'; });
+        boxes += '</g>';
+      } else {
+        const lines = v.cut ? ['more questions…', v.node.n + ' rows'] : opt.leaf(v.node);
+        const cls = v.cut ? 'cut' : opt.leafClass ? opt.leafClass(v.node) : '';
+        boxes += '<g data-tip="' + esc(lines.join('\n')) + '"><rect class="tleaf ' + cls + (path.has(v.node) ? ' on' : '') + '" x="' + (v.x - bw / 2) + '" y="' + y + '" width="' + bw + '" height="' + boxH + '" rx="' + (boxH / 2) + '"/>';
+        lines.slice(0, 2).forEach((l, i) => { boxes += '<text class="' + (i ? 'tsub' : 'tq') + '" x="' + v.x + '" y="' + (y + 21 + i * 15) + '" text-anchor="middle">' + esc(trunc(l, chars)) + '</text>'; });
+        boxes += '</g>';
+      }
+    }
+    el.innerHTML = '<svg class="chart tree" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(opt.label || 'Decision tree diagram') + '">' + edges + boxes + '</svg>';
+    // Shrinks to fit narrow containers, but never grows past its natural size.
+    el.firstChild.style.maxWidth = W + 'px';
+  }
+
+  root.Charts = { hbar, scatter, lines, confusion, legend, bindTips, treeDiagram, SHAPES, esc, niceTicks };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

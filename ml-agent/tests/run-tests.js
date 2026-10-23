@@ -194,8 +194,11 @@ test('privacy lint: no network, storage or tracking code', () => {
   assert.ok(marked.every(l => /example\.com|new Image|document\.cookie/.test(l)), 'self-test lines only probe example.com');
 });
 
-test('privacy lint: the page locks itself down and loads nothing from other servers', () => {
-  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+test('privacy lint: every page locks itself down and loads nothing from other servers', () => {
+  for (const page of ['index.html', 'learn.html']) checkPage(page);
+});
+function checkPage(page) {
+  const html = fs.readFileSync(path.join(ROOT, page), 'utf8');
   const csp = (html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/) || [])[1] || '';
   for (const rule of ["default-src 'none'", "connect-src 'none'", "form-action 'none'", "script-src 'self'", "img-src data: blob:", "base-uri 'none'"]) {
     assert.ok(csp.includes(rule), 'CSP must include ' + rule);
@@ -205,7 +208,7 @@ test('privacy lint: the page locks itself down and loads nothing from other serv
   for (const s of srcs) assert.ok(!/^(https?:)?\/\//.test(s), 'external resource: ' + s);
   assert.ok(!/<script>[^<]/.test(html), 'no inline scripts');
   assert.ok(!/\son[a-z]+="/.test(html), 'no inline event handlers');
-});
+}
 
 test('round trip: a generated run sheet, once filled in, is analyzed as a DOE', async () => {
   const factors = [{ name: 'Temp', low: 150, high: 180 }, { name: 'Time', low: 30, high: 60 }, { name: 'Supplier', low: 'North', high: 'East', categorical: true }];
@@ -221,4 +224,48 @@ test('round trip: a generated run sheet, once filled in, is analyzed as a DOE', 
   assert.ok(rep.dropped.some(d => d.name === 'RunOrder') && rep.dropped.some(d => d.name === 'StdOrder'));
   const temp = rep.doe.terms.find(t => t.name === 'Temp');
   assert.ok(Math.abs(temp.effect - 10) < 0.5 && temp.p < 0.01);
+});
+
+test('action plan turns drivers into plain-English moves', async () => {
+  const get = id => S.find(s => s.id === id);
+  const mold = await A.run(E.parseCSV(get('molding').make()), { target: 'Yield', goal: 'max' });
+  const items = mold.actionPlan.items;
+  const temp = items.find(i => i.factor === 'MeltTemp');
+  assert.strictEqual(temp.verb, 'Target', 'MeltTemp has a sweet spot');
+  const mat = items.find(i => i.factor === 'Material');
+  assert.ok(mat && /Resin C/.test(mat.text) && /Resin B/.test(mat.text), 'best and worst material named');
+  assert.ok(items.find(i => i.factor === 'Pressure').verb === 'Increase');
+  assert.ok(/would average/.test(mold.actionPlan.combined));
+  // Flipping the goal flips the advice.
+  const low = await A.run(E.parseCSV(get('molding').make()), { target: 'Yield', goal: 'min' });
+  assert.strictEqual(low.actionPlan.items.find(i => i.factor === 'Pressure').verb, 'Decrease');
+
+  const doe = await A.run(E.parseCSV(get('factorial').make()), { target: 'Yield' });
+  assert.ok(doe.actionPlan.items.some(i => i.factor === 'Temperature' && i.verb === 'Increase'));
+  assert.ok(doe.actionPlan.items.some(i => i.verb === 'Combine'), 'interaction becomes a "change together" action');
+  assert.ok(doe.actionPlan.quiet.includes('Time'));
+
+  const bat = await A.run(E.parseCSV(get('batches').make()), { target: 'Result' });
+  assert.strictEqual(bat.classes[bat.favorable], 'Pass');
+  assert.ok(bat.actionPlan.items.some(i => i.factor === 'Temperature' && i.verb === 'Decrease'));
+  assert.ok(bat.explain.tree && bat.explain.trees.length === 3);
+});
+
+test('favorable outcome is guessed sensibly', () => {
+  assert.strictEqual(A.guessFavorable(['Fail', 'Pass']), 1);
+  assert.strictEqual(A.guessFavorable(['Late', 'OnTime']), 1);
+  assert.strictEqual(A.guessFavorable(['Defect', 'OK']), 1);
+  assert.strictEqual(A.guessFavorable(['Churned', 'Stayed']), 1);
+  assert.strictEqual(A.guessFavorable(['0', '1']), 1);
+});
+
+test('every "learn more" link points to a lesson that exists', () => {
+  const X = require(path.join(ROOT, 'explain.js'));
+  const learn = fs.readFileSync(path.join(ROOT, 'learn.js'), 'utf8');
+  const ids = new Set([...learn.matchAll(/id: '([a-z-]+)', group/g)].map(m => m[1]));
+  assert.ok(ids.size >= 20, ids.size + ' lessons');
+  for (const t of Object.values(X.MODEL_TOPIC)) assert.ok(ids.has(t), 'model topic ' + t);
+  for (const [k, v] of Object.entries(X.READ)) assert.ok(ids.has(v[2]), 'chart ' + k + ' → ' + v[2]);
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8') + fs.readFileSync(path.join(ROOT, 'agent.js'), 'utf8');
+  for (const m of app.matchAll(/learnLink\('([a-z-]+)'/g)) assert.ok(ids.has(m[1]), 'link ' + m[1]);
 });

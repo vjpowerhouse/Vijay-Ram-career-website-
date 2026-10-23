@@ -77,6 +77,7 @@
       if (report.task === 'classification' && targetCol.unique > 20) throw new Error('"' + targetCol.name + '" has ' + targetCol.unique + ' categories. Pick a target with 20 or fewer, or treat it as a number.');
       await supervised(report, prof, targetCol, features, seed, say, progress);
     }
+    report.actionPlan = actionPlan(report);
     report.insights = insights(report, prof, targetCol, features);
     report.nextSteps = nextSteps(report, prof, targetCol, features);
     say('Done. Findings and next steps are ready.', 'done');
@@ -164,12 +165,30 @@
     report.importance = best.id === 'baseline' ? [] : E.permutationImportance(full, data, task, seed);
     const totalImp = report.importance.reduce((s, v) => s + v.importance, 0) || 1;
     report.importance.forEach(v => { v.share = v.importance / totalImp; });
-    report.directions = {};
-    for (const imp of report.importance.slice(0, 6)) {
-      const col = features.find(c => c.name === imp.name);
-      if (col && col.kind === 'numeric') report.directions[col.name] = E.directionEffect(full, data, col);
+    if (task === 'classification') {
+      const g = String(report.goal || '');
+      let fav = g.indexOf('class:') === 0 ? data.classes.indexOf(g.slice(6)) : -1;
+      if (fav < 0) fav = guessFavorable(data.classes);
+      report.favorable = fav;
     }
+    // How the result moves with each top driver, other things equal.
+    report.pd = [];
+    for (const imp of report.importance.filter(v => v.share >= 0.03).slice(0, 6)) {
+      const col = features.find(c => c.name === imp.name);
+      const pdv = col && E.partialDependence(full, data, col, report.favorable);
+      if (pdv) { pdv.share = imp.share; report.pd.push(pdv); }
+    }
+    await tick();
+    explainModel(report, full, data, best, task, K);
+    // Average prediction over past rows with some columns overridden (the "apply all" estimate).
+    const sample = data.rows.filter((_, i) => i % Math.max(1, Math.ceil(data.rows.length / 400)) === 0);
+    report.averageWith = overrides => {
+      const X = sample.map(r => { const o = {}; for (const p of full.enc.parts) o[p.col.name] = p.col.values[r]; return full.enc.encodeValues(Object.assign(o, overrides)); });
+      const pr = full.fitted.predictProba ? full.fitted.predictProba(X).map(q => q[report.favorable]) : full.fitted.predict(X);
+      return E.mean(pr);
+    };
     report.actual = data.y;
+    report.targetSD = E.sd(task === 'regression' ? data.y : []);
     report.predict = values => {
       const x = full.enc.encodeValues(values);
       if (full.fitted.predictProba) { const pr = full.fitted.predictProba([x])[0]; return { proba: pr, label: data.classes[pr.indexOf(Math.max.apply(null, pr))] }; }
@@ -271,13 +290,6 @@
       } else if (lin && lin.metrics && bestNon) add('info', 'A straight-line model does about as well as complex ones. The relationships are close to linear, which makes them easy to act on.');
       const top = (rep.importance || []).filter(v => v.share > 0.05).slice(0, 3);
       if (top.length) add('good', 'Top drivers of ' + rep.target + ': ' + top.map(t => t.name + ' (' + pct(t.share) + ' of importance)').join(', ') + '.');
-      for (const t of top) {
-        const d = rep.directions && rep.directions[t.name];
-        if (!d) continue;
-        const delta = d.atHigh - d.atLow;
-        const what = rep.task === 'classification' ? 'chance of ' + rep.target + ' = ' + rep.classes[rep.classes.length - 1] : rep.target;
-        add('info', 'Raising ' + t.name + ' from ' + fmt(d.low) + ' to ' + fmt(d.high) + ' moves ' + what + ' by ' + (delta >= 0 ? '+' : '') + (rep.task === 'classification' ? pct(delta) : fmt(delta)) + ' on average, other things equal (model estimate, not proof of cause).');
-      }
     }
     if (rep.doe) {
       const a = rep.doe;
@@ -354,6 +366,154 @@
     return isFinite(v) ? Number(Number(v).toPrecision(3)) : v;
   }
 
-  root.MLAgent = { run, guessTarget, decideTask, fmt, pct, MAX_ROWS };
+  const GOOD_CLASS = /^(pass|passed|good|yes|y|true|1|success|successful|ok|accept|accepted|approved|win|won|on ?time|in ?spec|conforming|compliant|retained|active)$/i;
+  const BAD_CLASS = /(fail|bad|^no$|^n$|false|^0$|defect|reject|late|scrap|churn|lost|out ?of ?spec|nonconform|error|delay)/i;
+  function guessFavorable(classes) {
+    const g = classes.findIndex(c => GOOD_CLASS.test(String(c).trim()));
+    if (g >= 0) return g;
+    if (classes.length === 2) { const b = classes.findIndex(c => BAD_CLASS.test(String(c))); if (b >= 0) return 1 - b; }
+    return classes.length - 1;
+  }
+
+  // Turns an encoded split (feature index, threshold) back into a question in the user's units.
+  function splitQuestion(enc, f, t) {
+    const part = enc.parts[enc.groups[f]];
+    if (part.type === 'num') return { q: part.col.name + ' ≤ ' + fmt(t * part.s + part.m) + '?', leftIsYes: true };
+    const lv = enc.labels[f].slice(part.col.name.length + 3);
+    return { q: part.col.name + ' = ' + lv + '?', leftIsYes: false };
+  }
+
+  /* Material for the "peek inside the model" view: a simple 3-level tree trained on the same
+     data, real trees from forests and boosting, and a per-unit "recipe" for linear models. */
+  function explainModel(rep, full, data, best, task, K) {
+    const n = full.X.length;
+    const opt = { maxDepth: 3, minLeaf: Math.max(3, Math.round(n / 40)), nClasses: task === 'classification' ? K : 0 };
+    const tree = E.buildTree(full.X, data.y, range(n), opt, rng(rep.seed), 0);
+    const pr = full.X.map(r => E.treePredictRow(tree, r));
+    const score = task === 'regression' ? E.regressionMetrics(data.y, pr).r2
+      : E.classificationMetrics(data.y, pr.map(p => p.indexOf(Math.max.apply(null, p))), K).accuracy;
+    const question = (f, t) => splitQuestion(full.enc, f, t);
+    rep.explain = { tree, score, question };
+    if (full.fitted.trees) rep.explain.trees = full.fitted.trees.slice(0, 3);
+    if (['linear', 'ridge', 'lasso'].includes(best.id) && full.fitted.w) {
+      rep.explain.recipe = full.fitted.w.map((w, j) => {
+        const part = full.enc.parts[full.enc.groups[j]];
+        if (part.type === 'num') return { label: part.col.name, numeric: true, perUnit: w / part.s, effectRange: w / part.s * ((part.col.stats.p90 - part.col.stats.p10) || 0) };
+        return { label: full.enc.labels[j], numeric: false, ref: part.kept[0], perUnit: w, effectRange: w };
+      }).filter(r => Math.abs(r.effectRange) > 1e-9).sort((a, b) => Math.abs(b.effectRange) - Math.abs(a.effectRange));
+    }
+  }
+
+  // ---------- Plain-English action plan ----------
+  function actionPlan(rep) {
+    if (rep.doe) return doeActions(rep);
+    if (rep.clustering) return clusterActions(rep);
+    if (!rep.pd) return null;
+    const cls = rep.task === 'classification';
+    const maximize = cls || rep.goal !== 'min';
+    const outcome = cls ? 'the chance of ' + rep.target + ' = ' + rep.classes[rep.favorable] : rep.target;
+    const better = (a, b) => (maximize ? a > b : a < b);
+    const show = d => {
+      if (cls ? Math.abs(d) < 0.005 : Math.abs(d) < 0.02 * (rep.targetSD || 1)) return 'about the same';
+      return cls ? (d >= 0 ? '+' : '−') + Math.abs(Math.round(d * 100)) + ' percentage points' : (d >= 0 ? '+' : '−') + fmt(Math.abs(d));
+    };
+    const r3 = v => (typeof v === 'number' ? Number(v.toPrecision(3)) : v);
+    const unitOf = v => (typeof v === 'number' ? fmt(v) : v);
+    const spanRef = cls ? 0.03 : 0.1 * (rep.targetSD || 1);
+    const maxSpan = Math.max(0, ...rep.pd.map(p => Math.max(...p.ys) - Math.min(...p.ys)));
+    const items = [], quiet = [], best = {};
+    for (const p of rep.pd) {
+      const span = Math.max(...p.ys) - Math.min(...p.ys);
+      if (span < spanRef || span < 0.15 * maxSpan) { quiet.push(p.name); continue; }
+      let bi = 0; p.ys.forEach((v, i) => { if (better(v, p.ys[bi])) bi = i; });
+      let ti = 0;
+      if (p.kind === 'numeric') p.grid.forEach((g, i) => { if (Math.abs(g - p.typical) < Math.abs(p.grid[ti] - p.typical)) ti = i; });
+      else ti = Math.max(0, p.grid.indexOf(p.typical));
+      const gain = (p.ys[bi] - p.ys[ti]) * (maximize ? 1 : -1);
+      best[p.name] = r3(p.grid[bi]);
+      let verb, text;
+      if (p.kind === 'numeric') {
+        const last = p.grid.length - 1;
+        if (bi >= last - 1) { verb = 'Increase'; text = 'Raise ' + p.name + ' from its typical ' + fmt(r3(p.typical)) + ' toward ' + fmt(r3(p.grid[bi])) + ', the high end of what your data covers.'; }
+        else if (bi <= 1) { verb = 'Decrease'; text = 'Lower ' + p.name + ' from its typical ' + fmt(r3(p.typical)) + ' toward ' + fmt(r3(p.grid[bi])) + ', the low end of what your data covers.'; }
+        else { verb = 'Target'; text = 'Keep ' + p.name + ' near ' + fmt(r3(p.grid[bi])) + '. That is a sweet spot: going higher or lower both make ' + outcome + ' worse.'; }
+        if (Math.abs(gain) < 0.2 * span) text += ' You are already close to the best level, so hold it there.';
+      } else {
+        let wi = 0; p.ys.forEach((v, i) => { if (better(p.ys[wi], v)) wi = i; });
+        verb = 'Choose';
+        text = 'Use ' + p.name + ' = ' + p.grid[bi] + ' where you can' + (p.grid[wi] !== p.grid[bi] ? '; ' + p.grid[wi] + ' gives the worst ' + (cls ? 'odds' : 'results') : '') + '.';
+        if (Math.abs(gain) < 0.2 * span) text += ' ' + p.grid[bi] + ' is already the most common choice.';
+      }
+      items.push({ verb, factor: p.name, text, impact: gain, impactText: 'Expected change vs typical: ' + (cls ? 'chance of ' + rep.classes[rep.favorable] + ' ' : rep.target + ' ') + show(gain), span });
+    }
+    items.sort((a, b) => b.span - a.span);
+    const plan = {
+      headline: (cls ? 'To raise the chance of ' + rep.target + ' = ' + rep.classes[rep.favorable] : (maximize ? 'To increase ' : 'To decrease ') + rep.target) + ', starting with the strongest lever:',
+      items: items.slice(0, 5), quiet,
+      confidence: confidence(rep)
+    };
+    const levers = items.slice(0, 5);
+    if (levers.length && rep.averageWith) {
+      const tuned = {};
+      for (const it of levers) tuned[it.factor] = best[it.factor];
+      const now = rep.averageWith({}), after = rep.averageWith(tuned);
+      plan.combined = 'If every past row had used these settings, the model estimates ' + (cls
+        ? 'the chance of ' + rep.classes[rep.favorable] + ' would average ' + pct(after) + ' instead of ' + pct(now) + '.'
+        : rep.target + ' would average ' + fmt(after) + ' instead of ' + fmt(now) + '.');
+      plan.settings = levers.map(it => ({ name: it.factor, value: unitOf(tuned[it.factor]) }));
+    }
+    plan.caveat = 'These come from patterns in past data, which show what moves together, not what causes what. Make one change at a time or, better, confirm with the DOE pre-filled below before changing the process. Stay inside the ranges you have run before.';
+    return plan;
+  }
+  function confidence(rep) {
+    if (rep.doe) return rep.doe.r2 >= 0.8 && rep.doe.dfe > 0 ? 'high' : rep.doe.r2 >= 0.6 ? 'medium' : 'low';
+    if (!rep.best) return 'medium';
+    const v = rep.best.metrics[rep.metricKey];
+    if (rep.task === 'regression') return v >= 0.7 ? 'high' : v >= 0.4 ? 'medium' : 'low';
+    return v >= 0.85 ? 'high' : v >= 0.7 ? 'medium' : 'low';
+  }
+  function doeActions(rep) {
+    const a = rep.doe, maximize = rep.goal !== 'min';
+    const opt = maximize ? a.optimum.max : a.optimum.min;
+    if (!opt) return null;
+    const sig = a.terms.filter(t => t.p < 0.05);
+    const active = new Set(sig.reduce((s, t) => s.concat(t.idx), []));
+    const mains = a.terms.filter(t => t.kind === 'main').sort((x, y) => Math.abs(y.effect) - Math.abs(x.effect));
+    const items = [], quiet = [];
+    for (const m of mains) {
+      const i = m.idx[0], f = a.factors[i], st = opt.settings[i];
+      if (!active.has(i)) { quiet.push(f.name); continue; }
+      const val = typeof st.actual === 'number' ? fmt(st.actual) : st.actual;
+      const verb = f.categorical ? 'Choose' : st.coded > 0.5 ? 'Increase' : st.coded < -0.5 ? 'Decrease' : 'Target';
+      const text = f.categorical ? 'Use ' + f.name + ' = ' + val + '.'
+        : st.coded > 0.5 ? 'Set ' + f.name + ' high, at ' + val + ' (the top of the tested range).'
+          : st.coded < -0.5 ? 'Set ' + f.name + ' low, at ' + val + ' (the bottom of the tested range).'
+            : 'Set ' + f.name + ' to about ' + val + ', inside the tested range.';
+      items.push({ verb, factor: f.name, text, impact: m.effect, impactText: 'Going from low to high changes ' + rep.target + ' by ' + (m.effect >= 0 ? '+' : '−') + fmt(Math.abs(m.effect)) + (m.p < 0.05 ? '' : ' on its own (it matters through an interaction)') });
+    }
+    for (const t of sig.filter(t => t.kind === 'interaction')) {
+      const [i, j] = t.idx;
+      items.push({ verb: 'Combine', factor: a.factors[i].name + ' × ' + a.factors[j].name, text: a.factors[i].name + ' and ' + a.factors[j].name + ' work together: the effect of one depends on the setting of the other. Change them as a pair, using the settings above.', impact: t.effect, impactText: 'Interaction effect ' + (t.effect >= 0 ? '+' : '−') + fmt(Math.abs(t.effect)) });
+    }
+    return {
+      headline: (maximize ? 'To increase ' : 'To decrease ') + rep.target + ', based on your experiment:',
+      items, quiet, confidence: confidence(rep),
+      combined: 'At these settings the model predicts ' + rep.target + ' of about ' + fmt(opt.y) + ', vs an average of ' + fmt(E.mean(a.y)) + ' across your runs.',
+      settings: opt.settings.map(s => ({ name: s.name, value: typeof s.actual === 'number' ? fmt(s.actual) : s.actual })),
+      caveat: 'A designed experiment does show cause and effect, but only inside the ranges you tested. Confirm with 3 to 5 runs at these settings before you change the standard.'
+    };
+  }
+  function clusterActions(rep) {
+    const c = rep.clustering;
+    const items = c.profiles.map(p => ({
+      verb: 'Segment', factor: 'Group ' + p.cluster,
+      text: 'Group ' + p.cluster + ' (' + pct(p.share) + ' of rows) stands out for ' + p.traits.slice(0, 2).map(t => t.text.replace(/ \(.*\)$/, '')).join(' and ') + '. Treat it as its own segment: give it its own targets or service level, and ask the team why it differs.',
+      impactText: p.size + ' rows'
+    }));
+    if (c.outliers.length) items.push({ verb: 'Check', factor: 'Unusual rows', text: 'Look at the ' + c.outliers.length + ' unusual rows first (row ' + c.outliers.slice(0, 5).map(o => o.row).join(', ') + (c.outliers.length > 5 ? '…' : '') + '). They are either data errors or special causes worth understanding.', impactText: '' });
+    return { headline: 'What to do with these groups:', items, quiet: [], confidence: c.silhouette >= 0.5 ? 'high' : c.silhouette >= 0.25 ? 'medium' : 'low', caveat: 'Groups describe the data; they do not explain it. Name them with people who know the process.' };
+  }
+
+  root.MLAgent = { run, guessTarget, decideTask, guessFavorable, fmt, pct, MAX_ROWS };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.MLAgent;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

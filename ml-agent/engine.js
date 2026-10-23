@@ -376,11 +376,12 @@
   // Decision tree (CART). Regression uses squared error, classification uses Gini.
   function buildTree(X, y, idx, opt, rand, depth) {
     const nC = opt.nClasses;
-    const leaf = () => {
-      if (opt.leafValue) return { leaf: true, value: opt.leafValue(idx) };
-      if (nC) { const p = new Array(nC).fill(0); for (const i of idx) p[y[i]] += 1 / idx.length; return { leaf: true, value: p }; }
-      let s = 0; for (const i of idx) s += y[i]; return { leaf: true, value: s / idx.length };
+    // Every node keeps its row count and average, so trees can be drawn as diagrams.
+    const nodeValue = () => {
+      if (nC) { const p = new Array(nC).fill(0); for (const i of idx) p[y[i]] += 1 / idx.length; return p; }
+      let s = 0; for (const i of idx) s += y[i]; return s / idx.length;
     };
+    const leaf = () => ({ leaf: true, n: idx.length, value: opt.leafValue ? opt.leafValue(idx) : nodeValue() });
     if (depth >= opt.maxDepth || idx.length < 2 * opt.minLeaf) return leaf();
     // Pure node?
     let pure = true; for (let k = 1; k < idx.length && pure; k++) if (y[idx[k]] !== y[idx[0]]) pure = false;
@@ -430,7 +431,7 @@
     if (bestF < 0 || bestGain <= parent + 1e-12) return leaf();
     const li = [], ri = [];
     for (const i of idx) (X[i][bestF] <= bestT ? li : ri).push(i);
-    return { f: bestF, t: bestT, left: buildTree(X, y, li, opt, rand, depth + 1), right: buildTree(X, y, ri, opt, rand, depth + 1) };
+    return { f: bestF, t: bestT, n: idx.length, value: opt.leafValue ? null : nodeValue(), left: buildTree(X, y, li, opt, rand, depth + 1), right: buildTree(X, y, ri, opt, rand, depth + 1) };
   }
   function treePredictRow(node, r) { while (!node.leaf) node = r[node.f] <= node.t ? node.left : node.right; return node.value; }
   function treeLeafOf(node, r) { while (!node.leaf) node = r[node.f] <= node.t ? node.left : node.right; return node; }
@@ -588,12 +589,13 @@
           const idx = range(n).map(() => Math.floor(ctx.rand() * n));
           trees.push(buildTree(X, y, idx, opt, ctx.rand, 0));
         }
-        if (!cls) return { predict: Xn => Xn.map(r => { let s = 0; for (const t of trees) s += treePredictRow(t, r); return s / trees.length; }) };
-        return classifier(Xn => Xn.map(r => {
+        if (!cls) return { trees, predict: Xn => Xn.map(r => { let s = 0; for (const t of trees) s += treePredictRow(t, r); return s / trees.length; }) };
+        const m = classifier(Xn => Xn.map(r => {
           const pr = new Array(ctx.nClasses).fill(0);
           for (const t of trees) { const v = treePredictRow(t, r); for (let k = 0; k < pr.length; k++) pr[k] += v[k] / trees.length; }
           return pr;
         }));
+        m.trees = trees; return m;
       }
     },
     {
@@ -613,7 +615,7 @@
             trees.push(t);
             for (let i = 0; i < n; i++) F[i] += lr * treePredictRow(t, X[i]);
           }
-          return { predict: Xn => Xn.map(row => { let s = f0; for (const t of trees) s += lr * treePredictRow(t, row); return s; }) };
+          return { trees, f0, lr, predict: Xn => Xn.map(row => { let s = f0; for (const t of trees) s += lr * treePredictRow(t, row); return s; }) };
         }
         // Binary classification with log-loss; Newton step for leaf values.
         const pos = y.reduce((s, v) => s + v, 0) / n;
@@ -635,10 +637,11 @@
           trees.push(t);
           for (let i = 0; i < n; i++) F[i] += lr * treePredictRow(t, X[i]);
         }
-        return classifier(Xn => Xn.map(row => {
+        const m = classifier(Xn => Xn.map(row => {
           let s = f0; for (const t of trees) s += lr * treePredictRow(t, row);
           const p1 = sig(s); return [1 - p1, p1];
         }));
+        Object.assign(m, { trees, f0, lr }); return m;
       }
     }
   ];
@@ -742,21 +745,35 @@
     }).sort((a, b) => b.importance - a.importance);
   }
 
-  // Average predicted change when a numeric factor moves from its 10th to 90th percentile.
-  function directionEffect(full, data, col) {
+  /* Partial dependence: set one column to each value on a grid for every row, and average
+     the model's prediction. Shows how the result moves with that column, other things equal.
+     For classifiers it tracks the probability of class `cls`. */
+  function partialDependence(full, data, col, cls) {
     const { enc, fitted } = full;
-    const lo = col.stats.p10, hi = col.stats.p90;
-    if (!(hi > lo)) return null;
-    const pi = enc.parts.findIndex(p => p.col === col);
-    const j = enc.groups.indexOf(pi);
-    const part = enc.parts[pi];
-    const X = full.X;
-    const set = v => X.map(r => { const o = r.slice(); o[j] = (v - part.m) / part.s; return o; });
-    const val = Xs => {
-      const pr = fitted.predictProba ? fitted.predictProba(Xs).map(p => p[p.length - 1]) : fitted.predict(Xs);
+    const raw = data.rows;
+    let grid;
+    if (col.kind === 'numeric') {
+      const vals = raw.map(r => col.values[r]).filter(v => v !== null).sort((a, b) => a - b);
+      const lo = quantile(vals, 0.05), hi = quantile(vals, 0.95);
+      if (!(hi > lo)) return null;
+      grid = range(13).map(i => lo + (hi - lo) * i / 12);
+    } else {
+      const counts = {};
+      for (const r of raw) { const v = col.values[r]; if (v !== null) counts[v] = (counts[v] || 0) + 1; }
+      grid = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).slice(0, 10);
+    }
+    // Score on a sample of rows to keep it fast.
+    const sample = raw.length > 400 ? raw.filter((_, i) => i % Math.ceil(raw.length / 400) === 0) : raw;
+    const getRow = r => { const o = {}; for (const p of enc.parts) o[p.col.name] = p.col.values[r]; return o; };
+    const base = sample.map(getRow);
+    const ys = grid.map(g => {
+      const X = base.map(o => { const c = Object.assign({}, o); c[col.name] = g; return enc.encodeValues(c); });
+      const pr = fitted.predictProba ? fitted.predictProba(X).map(p => p[cls]) : fitted.predict(X);
       return mean(pr);
-    };
-    return { low: lo, high: hi, atLow: val(set(lo)), atHigh: val(set(hi)) };
+    });
+    const vals = raw.map(r => col.values[r]).filter(v => v !== null);
+    const typical = col.kind === 'numeric' ? median(vals) : col.levels[0];
+    return { name: col.name, kind: col.kind, grid, ys, typical };
   }
 
   // ---------- Unsupervised ----------
@@ -861,9 +878,9 @@
 
   root.MLEngine = {
     rng, shuffle, range, mean, sd, variance, quantile, median, pearson, tTestP, invert, gram,
-    parseCSV, profile, isUsableFeature, toNumber, fitEncoder, fitRidgeCore, buildTree,
+    parseCSV, profile, isUsableFeature, toNumber, fitEncoder, fitRidgeCore, fitLasso, buildTree,
     MODELS, makeFolds, crossValidate, fitFull, regressionMetrics, classificationMetrics,
-    supervisedData, permutationImportance, directionEffect, kmeans, silhouette, pca
+    supervisedData, permutationImportance, partialDependence, treePredictRow, kmeans, silhouette, pca
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.MLEngine;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
