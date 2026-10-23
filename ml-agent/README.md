@@ -38,6 +38,12 @@ Live: `https://<your-pages-domain>/ml-agent/` (served by GitHub Pages from this 
 
 **Fine print:** GitHub Pages, like any web host, logs that the page was opened. It never receives your data. Browser extensions can read any page you open, so use a clean browser profile for sensitive data. For the strictest setup, download this folder and open `index.html` from disk with Wi-Fi off. It works fully offline.
 
+## Demo and intranet rollout
+
+- `DEMO.md`: a 12-minute executive demo script using the public datasets in `demo-data/`, with expected results and answers to common questions.
+- `DEPLOY.md`: hosting on IIS, Apache, nginx or a shared drive, the security summary for IT, integrity checks and a smoke test.
+- `package.sh` builds `dist/ml-agent-intranet-<version>.zip` (runtime files, demo data, docs, `SHA256SUMS.txt`). CI builds the same zip on every push: open the "ML Agent tests" run in the Actions tab and download the `ml-agent-intranet` artifact.
+
 ## Run locally
 
 ```sh

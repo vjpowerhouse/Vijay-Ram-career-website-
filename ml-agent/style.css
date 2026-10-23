@@ -59,7 +59,7 @@ h3 { font-size: 1.05rem; margin-bottom: .5rem; }
 .verb { font: 700 .75rem/1.9 var(--mono); text-transform: uppercase; letter-spacing: .06em; text-align: center; border-radius: 6px; background: var(--steel); color: var(--surface); }
 .verb.Decrease { background: var(--s2); }
 .verb.Target, .verb.Combine { background: var(--accent); color: var(--accent-ink); }
-.verb.Choose, .verb.Segment { background: var(--good); color: var(--surface); }
+.verb.Choose, .verb.Segment, .verb.Hold { background: var(--good); color: var(--surface); }
 .verb.Check { background: var(--warn); color: var(--surface); }
 .plan-list .impact { display: block; color: var(--muted); font-size: .88rem; margin-top: 2px; }
 .conf { display: inline-block; font: 600 .75rem/1.6 var(--mono); padding: 0 8px; border-radius: 999px; margin-left: 6px; vertical-align: middle; }

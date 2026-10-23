@@ -269,3 +269,18 @@ test('every "learn more" link points to a lesson that exists', () => {
   const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8') + fs.readFileSync(path.join(ROOT, 'agent.js'), 'utf8');
   for (const m of app.matchAll(/learnLink\('([a-z-]+)'/g)) assert.ok(ids.has(m[1]), 'link ' + m[1]);
 });
+
+test('columns that copy the target (data leakage) are set aside', async () => {
+  const rand = E.rng(12), rows = [];
+  for (let i = 0; i < 200; i++) {
+    const t = 150 + rand() * 100, pass = (t > 190 && rand() > 0.2) ? 'Pass' : 'Fail';
+    rows.push([t.toFixed(1), (rand() * 10).toFixed(2), pass === 'Pass' ? 'released' : 'scrapped', pass]);
+  }
+  const rep = await A.run({ columns: ['Temp', 'Noise', 'Disposition', 'Result'], rows }, { target: 'Result' });
+  assert.ok(rep.dropped.some(d => d.name === 'Disposition' && /copy of the result/.test(d.reason)));
+  assert.ok(!rep.features.includes('Disposition') && rep.features.includes('Temp'));
+  assert.ok(rep.best.metrics.balancedAccuracy < 0.99, 'no fake perfect score');
+  // A real but strong driver is not flagged.
+  const reg = await A.run(E.parseCSV(S.find(s => s.id === 'molding').make()), { target: 'Yield' });
+  assert.ok(!(reg.leaks || []).length);
+});

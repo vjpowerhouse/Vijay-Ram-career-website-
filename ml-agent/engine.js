@@ -338,11 +338,13 @@
     }
     return best;
   }
-  function quadExpand(X) {
-    const p = X[0].length;
+  /* Adds squares and pairwise products. Only for `cols` (numeric columns; yes/no category
+     columns stay linear), so many categories do not blow up the model size. */
+  function quadExpand(X, cols) {
+    cols = cols || range(X[0].length);
     return X.map(r => {
       const out = r.slice();
-      for (let i = 0; i < p; i++) for (let j = i; j < p; j++) out.push(r[i] * r[j]);
+      for (let a = 0; a < cols.length; a++) for (let b = a; b < cols.length; b++) out.push(r[cols[a]] * r[cols[b]]);
       return out;
     });
   }
@@ -445,10 +447,18 @@
     return e.map(v => v / s);
   }
   function sqDist(a, b) { let s = 0; for (let i = 0; i < a.length; i++) { const d = a[i] - b[i]; s += d * d; } return s; }
+  // Indices of the k closest rows, nearest first. Keeps a short sorted list instead of
+  // sorting every row, so it stays fast on thousands of rows.
   function nearest(Xtr, r, k) {
-    const d = Xtr.map((x, i) => [sqDist(x, r), i]);
-    d.sort((a, b) => a[0] - b[0]);
-    return d.slice(0, k).map(v => v[1]);
+    const dist = [], idx = [];
+    for (let i = 0; i < Xtr.length; i++) {
+      const d = sqDist(Xtr[i], r);
+      if (dist.length === k && d >= dist[k - 1]) continue;
+      let j = dist.length < k ? dist.length : k - 1;
+      while (j > 0 && dist[j - 1] > d) { if (j < k) { dist[j] = dist[j - 1]; idx[j] = idx[j - 1]; } j--; }
+      dist[j] = d; idx[j] = i;
+    }
+    return idx;
   }
 
   const MODELS = [
@@ -488,10 +498,11 @@
       plain: 'Like linear regression, but allows curves (a sweet spot) and interactions (factor A matters more when factor B is high). This is the classic response-surface model from DOE.',
       applicable: (n, p) => p >= 1 && p <= 12,
       fit(X, y, ctx) {
-        const Q = quadExpand(X);
+        const cols = range(X[0].length).filter(j => X.some(r => r[j] !== 0 && r[j] !== 1)).slice(0, 12);
+        const Q = quadExpand(X, cols);
         const lam = innerCVChoose(Q, y, [0.01, 0.1, 1, 10], (a, b, l) => fitRidgeCore(a, b, l), ctx.rand);
         const m = fitRidgeCore(Q, y, lam);
-        return { predict: Xn => m.predict(quadExpand(Xn)) };
+        return { predict: Xn => m.predict(quadExpand(Xn, cols)) };
       }
     },
     {
@@ -554,7 +565,20 @@
         if (!ks.length) ks.push(1);
         if (ctx.task === 'regression') {
           const make = (Xt, yt, k) => ({ predict: Xn => Xn.map(r => mean(nearest(Xt, r, k).map(i => yt[i]))) });
-          const k = innerCVChoose(X, y, ks, make, ctx.rand);
+          // Pick k on one held-out third (up to 600 rows): find each row's 15 nearest once,
+          // then score every k from that same list.
+          let k = ks[Math.min(1, ks.length - 1)];
+          if (X.length >= 12 && ks.length > 1) {
+            const order = shuffle(range(X.length), ctx.rand);
+            const te = order.slice(0, Math.min(600, Math.floor(X.length / 3))), tr = order.slice(te.length);
+            const Xt = tr.map(i => X[i]), yt = tr.map(i => y[i]), kTop = Math.min(ks[ks.length - 1], tr.length);
+            const err = ks.map(() => 0);
+            for (const i of te) {
+              const nb = nearest(Xt, X[i], kTop);
+              ks.forEach((kk, c) => { const m = mean(nb.slice(0, kk).map(j => yt[j])); err[c] += (m - y[i]) ** 2; });
+            }
+            k = ks[err.indexOf(Math.min(...err))];
+          }
           return make(X, y, k);
         }
         const k = ks[Math.min(1, ks.length - 1)];
@@ -610,7 +634,7 @@
           const f0 = mean(y), F = new Array(n).fill(f0);
           for (let m = 0; m < rounds; m++) {
             const r = y.map((v, i) => v - F[i]);
-            const sub = shuffle(range(n), ctx.rand).slice(0, Math.max(opt.minLeaf * 2, Math.round(n * 0.8)));
+            const sub = shuffle(range(n), ctx.rand).slice(0, Math.max(opt.minLeaf * 2, Math.round(n * (n > 1500 ? 0.5 : 0.8))));
             const t = buildTree(X, r, sub, opt, ctx.rand, 0);
             trees.push(t);
             for (let i = 0; i < n; i++) F[i] += lr * treePredictRow(t, X[i]);
@@ -632,7 +656,7 @@
               return den > 1e-9 ? Math.max(-4, Math.min(4, num / den)) : 0;
             }
           });
-          const sub = shuffle(range(n), ctx.rand).slice(0, Math.max(opt.minLeaf * 2, Math.round(n * 0.8)));
+          const sub = shuffle(range(n), ctx.rand).slice(0, Math.max(opt.minLeaf * 2, Math.round(n * (n > 1500 ? 0.5 : 0.8))));
           const t = buildTree(X, r, sub, o, ctx.rand, 0);
           trees.push(t);
           for (let i = 0; i < n; i++) F[i] += lr * treePredictRow(t, X[i]);

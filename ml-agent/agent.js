@@ -44,6 +44,7 @@
     if (!prof.nRows) throw new Error('No data rows found. Check that the first row holds column names.');
     say('Read ' + prof.nRows.toLocaleString() + ' rows and ' + prof.nCols + ' columns.');
     const exclude = new Set(options.exclude || []);
+    const report0 = {};
     const dropped = [];
     for (const c of prof.columns) {
       if (exclude.has(c.name)) dropped.push({ name: c.name, reason: 'excluded by you' });
@@ -58,10 +59,19 @@
     const targetCol = targetName ? prof.columns.find(c => c.name === targetName) : null;
     if (targetName && !targetCol) throw new Error('Target column "' + targetName + '" not found.');
     if (targetCol && !E.isUsableFeature(targetCol)) throw new Error('"' + targetName + '" cannot be predicted: it ' + (dropped.find(d => d.name === targetName) || { reason: 'is not usable' }).reason + '.');
-    const features = prof.columns.filter(c => c !== targetCol && E.isUsableFeature(c) && !exclude.has(c.name));
+    let features = prof.columns.filter(c => c !== targetCol && E.isUsableFeature(c) && !exclude.has(c.name));
+    if (targetCol) {
+      const leaks = findLeaks(prof, targetCol, features, decideTask(targetCol, options.task));
+      for (const l of leaks) {
+        dropped.push({ name: l.name, reason: 'predicts ' + targetCol.name + ' almost perfectly on its own (' + l.why + '), so it is probably a copy of the result or recorded after it' });
+        say('Set aside "' + l.name + '": it predicts "' + targetCol.name + '" almost perfectly on its own (' + l.why + '). That usually means it is a copy of the result or recorded after the fact (data leakage), which would make every model look perfect.', 'result');
+      }
+      features = features.filter(c => !leaks.some(l => l.name === c.name));
+      report0.leaks = leaks;
+    }
     if (!features.length) throw new Error('No usable input columns left. Include at least one numeric or category column besides the target.');
 
-    const report = { profile: prof, dropped, log, features: features.map(c => c.name), goal: options.goal || 'max', seed };
+    const report = Object.assign(report0, { profile: prof, dropped, log, features: features.map(c => c.name), goal: options.goal || 'max', seed });
     report.correlations = correlations(prof, features.concat(targetCol && targetCol.kind === 'numeric' ? [targetCol] : []));
 
     if (!targetCol) {
@@ -82,6 +92,34 @@
     report.nextSteps = nextSteps(report, prof, targetCol, features);
     say('Done. Findings and next steps are ready.', 'done');
     return report;
+  }
+
+  /* Data leakage: an input that on its own almost exactly reproduces the target (for example
+     "alive" next to "survived", or "total_price" next to "price"). */
+  function findLeaks(prof, target, features, task) {
+    const out = [];
+    const rows = range(prof.nRows).filter(r => target.values[r] !== null);
+    if (rows.length < 20) return out;
+    for (const c of features) {
+      const rr = rows.filter(r => c.values[r] !== null);
+      if (rr.length < 0.8 * rows.length) continue;
+      if (task === 'regression') {
+        if (c.kind !== 'numeric') continue;
+        const r = pearson(rr.map(i => c.values[i]), rr.map(i => target.values[i]));
+        if (Math.abs(r) >= 0.995) out.push({ name: c.name, why: 'correlation ' + r.toFixed(3) });
+      } else {
+        if (c.kind === 'numeric' && c.unique > 20) continue;
+        // Purity: share of rows whose class is the most common class for their value of c.
+        const tab = {};
+        for (const i of rr) { const k = String(c.values[i]), t = String(target.values[i]); (tab[k] = tab[k] || {})[t] = (tab[k][t] || 0) + 1; }
+        const keys = Object.keys(tab);
+        if (keys.length > Math.max(2, rr.length / 10)) continue;
+        const hit = keys.reduce((s, k) => s + Math.max(...Object.values(tab[k])), 0) / rr.length;
+        const base = Math.max(...Object.values(rr.reduce((m, i) => { const t = String(target.values[i]); m[t] = (m[t] || 0) + 1; return m; }, {}))) / rr.length;
+        if (hit >= 0.99 && base < 0.95) out.push({ name: c.name, why: pct(hit) + ' match' });
+      }
+    }
+    return out;
   }
 
   function correlations(prof, cols) {
@@ -258,6 +296,7 @@
     const n = rep.nUsed || prof.nRows;
     if (n < 30) add('warn', 'Only ' + n + ' rows. Treat results as directional; small samples can mislead. A planned experiment gets more from few runs than historical data does.');
     else if (features.length && n < 10 * features.length) add('warn', n + ' rows for ' + features.length + ' inputs. Rule of thumb is 10+ rows per input; more data would firm up the results.');
+    for (const l of rep.leaks || []) add('warn', '"' + l.name + '" was set aside because it matches ' + rep.target + ' almost exactly on its own (' + l.why + '). It is most likely recorded after the result or derived from it. If it truly is an input you control, you do not need machine learning for it: it already decides the result.');
     const gappy = prof.columns.filter(c => c.n && c.missing / c.n > 0.05 && c.kind !== 'empty');
     if (gappy.length) add('warn', 'Missing values in ' + gappy.map(c => c.name + ' (' + pct(c.missing / c.n) + ')').join(', ') + '. Gaps were filled with the median or most common value. Fix at the source if you can.');
     const strong = (rep.correlations || []).filter(c => Math.abs(c.r) >= 0.85 && c.a !== rep.target && c.b !== rep.target);
@@ -433,18 +472,26 @@
       best[p.name] = r3(p.grid[bi]);
       let verb, text;
       if (p.kind === 'numeric') {
-        const last = p.grid.length - 1;
-        if (bi >= last - 1) { verb = 'Increase'; text = 'Raise ' + p.name + ' from its typical ' + fmt(r3(p.typical)) + ' toward ' + fmt(r3(p.grid[bi])) + ', the high end of what your data covers.'; }
-        else if (bi <= 1) { verb = 'Decrease'; text = 'Lower ' + p.name + ' from its typical ' + fmt(r3(p.typical)) + ' toward ' + fmt(r3(p.grid[bi])) + ', the low end of what your data covers.'; }
-        else { verb = 'Target'; text = 'Keep ' + p.name + ' near ' + fmt(r3(p.grid[bi])) + '. That is a sweet spot: going higher or lower both make ' + outcome + ' worse.'; }
-        if (Math.abs(gain) < 0.2 * span) text += ' You are already close to the best level, so hold it there.';
+        const last = p.grid.length - 1, close = Math.abs(gain) < 0.2 * span, typ = fmt(r3(p.typical)), to = fmt(r3(p.grid[bi]));
+        if (bi >= last - 1) {
+          verb = close ? 'Hold' : 'Increase';
+          text = close ? 'Higher ' + p.name + ' is better, and your typical ' + typ + ' is already near the top of its useful range. Keep it there; lowering it would hurt ' + outcome + '.'
+            : 'Raise ' + p.name + ' from its typical ' + typ + ' toward ' + to + ', the high end of what your data covers.';
+        } else if (bi <= 1) {
+          verb = close ? 'Hold' : 'Decrease';
+          text = close ? 'Lower ' + p.name + ' is better, and your typical ' + typ + ' is already near the bottom of its useful range. Keep it there; raising it would hurt ' + outcome + '.'
+            : 'Lower ' + p.name + ' from its typical ' + typ + ' toward ' + to + ', the low end of what your data covers.';
+        } else {
+          verb = 'Target';
+          text = 'Keep ' + p.name + ' near ' + to + '. That is a sweet spot: going higher or lower both make ' + outcome + ' worse.' + (close ? ' Your typical ' + typ + ' is already close.' : '');
+        }
       } else {
         let wi = 0; p.ys.forEach((v, i) => { if (better(p.ys[wi], v)) wi = i; });
         verb = 'Choose';
         text = 'Use ' + p.name + ' = ' + p.grid[bi] + ' where you can' + (p.grid[wi] !== p.grid[bi] ? '; ' + p.grid[wi] + ' gives the worst ' + (cls ? 'odds' : 'results') : '') + '.';
-        if (Math.abs(gain) < 0.2 * span) text += ' ' + p.grid[bi] + ' is already the most common choice.';
+        if (Math.abs(gain) < 0.2 * span) { verb = 'Hold'; text = 'Keep using ' + p.name + ' = ' + p.grid[bi] + ' (already the most common choice)' + (p.grid[wi] !== p.grid[bi] ? ' and avoid ' + p.grid[wi] : '') + '.'; }
       }
-      items.push({ verb, factor: p.name, text, impact: gain, impactText: 'Expected change vs typical: ' + (cls ? 'chance of ' + rep.classes[rep.favorable] + ' ' : rep.target + ' ') + show(gain), span });
+      items.push({ verb, factor: p.name, text, impact: gain, impactText: 'Expected change vs typical: ' + (cls ? 'chance of ' + rep.target + ' = ' + rep.classes[rep.favorable] + ' ' : rep.target + ' ') + show(gain), span });
     }
     items.sort((a, b) => b.span - a.span);
     const plan = {
@@ -458,7 +505,7 @@
       for (const it of levers) tuned[it.factor] = best[it.factor];
       const now = rep.averageWith({}), after = rep.averageWith(tuned);
       plan.combined = 'If every past row had used these settings, the model estimates ' + (cls
-        ? 'the chance of ' + rep.classes[rep.favorable] + ' would average ' + pct(after) + ' instead of ' + pct(now) + '.'
+        ? 'the chance of ' + rep.target + ' = ' + rep.classes[rep.favorable] + ' would average ' + pct(after) + ' instead of ' + pct(now) + '.'
         : rep.target + ' would average ' + fmt(after) + ' instead of ' + fmt(now) + '.');
       plan.settings = levers.map(it => ({ name: it.factor, value: unitOf(tuned[it.factor]) }));
     }
